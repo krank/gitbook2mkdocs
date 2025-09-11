@@ -3,6 +3,10 @@
 import re
 import os
 
+base_dir = '_csharp_ref_old'
+nav_filename = '.nav.yml'
+summary_filename = 'SUMMARY.md'
+
 # TODO Add support for hidden pages (must read contents of actual md, info is in frontmatter)
 
 # Prepare regexp
@@ -13,12 +17,12 @@ name_sub_pattern = re.compile(
 # Set flags
 flag_tag_print = False
 flag_tag_write = False
-flag_yml_print = True
+flag_yml_print = False
 tag_output_file = "tags.xml"
 flag_include_star = False
 
 
-def tag_print(text: str, indent: int):
+def tag_print(text: str, indent: int) -> None:
     global flag_tag_print
     global flag_tag_write
     global tag_output_file
@@ -35,7 +39,10 @@ def tag_print(text: str, indent: int):
             file.write(line + "\n")
 
 
-def parse(yml_dict: dict[str, list[str]], lines: list[str], current_line: int, current_indent: int):
+def parse(yml_dict: dict[str, list[str]],
+          lines: list[str],
+          current_line: int,
+          current_indent: int) -> tuple[dict[str, list[str]], int, int]:
 
     # --------------------------------------------------------------------------
     # Title
@@ -49,11 +56,11 @@ def parse(yml_dict: dict[str, list[str]], lines: list[str], current_line: int, c
     # If title has a path, use that instead
     title_data = name_sub_pattern.match(current_title)
     if title_data != None and title_data.group('path') != None:
-        current_title = title_data.group('path') + "/.nav.yml"
+        current_title = os.path.join(title_data.group('path'), nav_filename)
 
     # If base title ("Table of contents"), just use ".nav.yml"
     if current_indent == 0:
-        current_title = ".nav.yml"
+        current_title = nav_filename
 
     # --------------------------------------------------------------------------
     # Prep
@@ -87,7 +94,7 @@ def parse(yml_dict: dict[str, list[str]], lines: list[str], current_line: int, c
         line_indent = int(1 + (len(line) - len(line.strip())) / 2)
 
         # ----------------------------------------------------------------------
-        #
+        # Handle recursion level & sectioning
 
         # If line starts a new chapter (## or ***) and we're at above level 0
         #  then end the current run
@@ -98,7 +105,8 @@ def parse(yml_dict: dict[str, list[str]], lines: list[str], current_line: int, c
             #  If we're in a chapter, fix its title by checking common
             #  path of subnodes
             if is_chapter:
-                new_key = os.path.commonpath(paths) + "/.nav.yml"
+                common_base_path = os.path.commonpath(paths)
+                new_key = os.path.join(common_base_path, nav_filename)
                 yml_dict[new_key] = yml_dict.pop(current_title)
 
             # Then return to previous level, but make it repeat this line
@@ -108,11 +116,22 @@ def parse(yml_dict: dict[str, list[str]], lines: list[str], current_line: int, c
         #  then add this chapter's directory to main node's list
         #  and then recurse into a new run
         elif line.startswith("## ") and current_indent == 0:
-            yml_dict[current_title].append(line_trimmed)
+
             (yml_dict, current_line, current_indent) = parse(
                 yml_dict, lines, current_line, current_indent + 1)
+            
+            # When the run's ended, the last key added should match
+            #  this chapter, so combine the chapter's title with its path
+            #  e.g. Chapter Title : chapter-title
+            last_added_key = list(yml_dict)[-1]
+            path_segment = os.path.split(last_added_key)[0]
+            line_to_add = line_trimmed + ": " + path_segment
+            
+            yml_dict[current_title].append(line_to_add)
 
-        # If it's just a common line
+        # ------------------------------------------------------------------------------
+        # Handle common lines
+
         if line.lstrip().startswith("* "):
 
             # If the line is more indented than the current run's level
@@ -127,10 +146,7 @@ def parse(yml_dict: dict[str, list[str]], lines: list[str], current_line: int, c
 
             elif line_indent < current_indent and current_indent > 0:
                 tag_print("/" + current_title, current_indent)
-                
-                if is_chapter:
-                    print(current_title)
-                return (yml_dict, current_line, current_indent - 1)
+                return (yml_dict, current_line-1, current_indent - 1)
 
             # Otherwise it should just be a normal line, with a filename
             #  and a path that we can extract using regex
@@ -146,14 +162,16 @@ def parse(yml_dict: dict[str, list[str]], lines: list[str], current_line: int, c
                     # For subsections, don't add the readme, add the last
                     #  section of the path instead
                     if line_to_add == "README.md" and line_data.group('path'):
-                        line_to_add = line_data.group('path').split('/')[-1]
+                        line_to_add = line_data.group('title').replace('\\', "") \
+                            + ": " \
+                            + line_data.group('path').split('/')[-1]
 
                     tag_print(line_to_add + "/", current_indent + 1)
-                    
+
                     if is_chapter:
                         paths.append(line_data.group('path'))
                     yml_dict[current_title].append(line_to_add)
-                    
+
                 # If it can't, something is seriously wrong but just add
                 #  the trimmed line
                 else:
@@ -162,24 +180,24 @@ def parse(yml_dict: dict[str, list[str]], lines: list[str], current_line: int, c
 
         current_line += 1
 
+    # ------------------------------------------------------------------------------
+    # Final cleanup after last line
+
     tag_print("/" + current_title, current_indent)
-    if is_chapter:
-        print(current_title)
     return (yml_dict, current_line, current_indent-1)
 
 
-def make_navyml(base_dir: str):
+def make_navyml(base_dir: str) -> dict[str, list[str]]:
+    summary_full_filename = os.path.join(base_dir, summary_filename)
+    print(summary_full_filename)
 
-    summary_filename = base_dir + "/" + "SUMMARY.md"
-
-    if not os.path.isfile(summary_filename):
+    if not os.path.isfile(summary_full_filename):
         print("... SUMMARY.md not found")
-        return None
+        return {}
 
-    with open(summary_filename, "r", encoding="utf-8") as file:
+    yml_dict = {}
+    with open(summary_full_filename, "r", encoding="utf-8") as file:
         lines = file.readlines()
-
-        yml_dict = {}
 
         (yml_dict, current_line, current_indent) = parse(yml_dict, lines, 0, 0)
 
@@ -189,5 +207,22 @@ def make_navyml(base_dir: str):
                 for line in yml_dict[key]:
                     print("     > " + line)
 
+    return yml_dict
 
-make_navyml('_csharp_ref_old/SUMMARY.md')
+
+def create_files(base_dir: str, yml_dict: dict[str, list[str]]) -> None:
+    for filename, content in yml_dict.items():
+        full_filename = os.path.join(base_dir, filename)
+
+        res = list(map(lambda line: f"  - {line}\n", content))
+        res.insert(0, "nav:\n")
+
+        with open(full_filename, "w", encoding="utf-8") as file:
+            file.writelines(res)
+
+        # print(full_filename)
+        # print(res)
+
+
+yml_dict = make_navyml(base_dir)
+create_files(base_dir, yml_dict)
