@@ -3,11 +3,13 @@
 import re
 import os
 
-base_dir = '_csharp_ref_old'
+# base_dir = '_csharp_ref_old'
 nav_filename = '.nav.yml'
 summary_filename = 'SUMMARY.md'
 
+# TODO Add support for appending * to all ymls
 # TODO Add support for hidden pages (must read contents of actual md, info is in frontmatter)
+# TODO Add flag for using titles from SUMMARY even for normal pages
 
 # Prepare regexp
 name_trim_pattern = re.compile(r"^(##?|\*) ")
@@ -20,7 +22,6 @@ flag_tag_write = False
 flag_yml_print = False
 tag_output_file = "tags.xml"
 flag_include_star = False
-
 
 def tag_print(text: str, indent: int) -> None:
     global flag_tag_print
@@ -37,7 +38,6 @@ def tag_print(text: str, indent: int) -> None:
             os.remove(tag_output_file)
         with open(tag_output_file, "a", encoding="utf-8") as file:
             file.write(line + "\n")
-
 
 def parse(yml_dict: dict[str, list[str]],
           lines: list[str],
@@ -186,7 +186,6 @@ def parse(yml_dict: dict[str, list[str]],
     tag_print("/" + current_title, current_indent)
     return (yml_dict, current_line, current_indent-1)
 
-
 def make_navyml(base_dir: str) -> dict[str, list[str]]:
     summary_full_filename = os.path.join(base_dir, summary_filename)
     print(summary_full_filename)
@@ -209,7 +208,6 @@ def make_navyml(base_dir: str) -> dict[str, list[str]]:
 
     return yml_dict
 
-
 def create_files(base_dir: str, yml_dict: dict[str, list[str]]) -> None:
     for filename, content in yml_dict.items():
         full_filename = os.path.join(base_dir, filename)
@@ -217,12 +215,12 @@ def create_files(base_dir: str, yml_dict: dict[str, list[str]]) -> None:
         res = list(map(lambda line: f"  - {line}\n", content))
         res.insert(0, "nav:\n")
 
-        with open(full_filename, "w", encoding="utf-8") as file:
-            file.writelines(res)
+        try:
+            with open(full_filename, "w", encoding="utf-8") as file:
+                file.writelines(res)
+        except:
+            print(f"Failed to create {full_filename}")
 
-        # print(full_filename)
-        # print(res)
-
-
-yml_dict = make_navyml(base_dir)
-create_files(base_dir, yml_dict)
+def generate_nav_ymls(base_dir: str):
+    yml_dict = make_navyml(base_dir)
+    create_files(base_dir, yml_dict)

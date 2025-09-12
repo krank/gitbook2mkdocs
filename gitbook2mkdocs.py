@@ -1,11 +1,18 @@
 #!/usr/bin/python3
 
-import sys, glob, os, shutil, re, json, html, urllib.parse
+# TODO: Make it use summary_nav_yml
 
-# Import from folder .admin
+# TODO: Add commandline parameters for source and dest directory
+# TODO: Modularize
 
-sys.path.append(sys.path[0] + "/.admin") # using folder of script, not folder where script runs
-from nav import generate_nav
+import sys
+import glob
+import os
+import shutil
+import re
+import json
+import html
+import urllib.parse
 
 # Read dash parameters
 private = False
@@ -17,7 +24,8 @@ print("Starting...")
 
 # Root folder for mkdocs
 # doc_root = "../docs/"
-doc_root = "docs/"
+target_dir = "_csharp_ref_old/docs"
+source_dir = "_csharp_ref_old"
 
 # All assets files
 img_source = ".gitbook/assets/"
@@ -27,7 +35,7 @@ img_dest = "images/"
 assets_dict = {}
 
 
-#region REGEXPS ################################################################
+# region REGEXPS ################################################################
 ################################################################################
 
 # replace gitbook code blocks to mkdocs-compatible format. e.g.
@@ -42,12 +50,18 @@ assets_dict = {}
 # some code
 # ```
 gb_code_rg = r'{% code ?(?:title=\"(?P<title>.*?)\" )?(?:lineNumbers=\"?(?P<linenums>.*?)\" )?%}\n```(?P<language>.*?)?\n(?P<code>.*|[\s\S]+?)```\n{% endcode %}'
+
+
 def code_group(groups):
-    code_title = f" title=\"{groups.group('title')}\"" if groups.group('title') else ""
-    code_lineNumbers = " linenums=\"1\"" if groups.group('linenums') == "true" else ""
-    code_language = groups.group('language') if groups.group('language') else ""
+    code_title = f" title=\"{groups.group('title')}\"" if groups.group(
+        'title') else ""
+    code_lineNumbers = " linenums=\"1\"" if groups.group(
+        'linenums') == "true" else ""
+    code_language = groups.group(
+        'language') if groups.group('language') else ""
     code_actual_code = groups.group('code')
     return f"``` {code_language}{code_title}{code_lineNumbers}\n{code_actual_code}```"
+
 
 # replace gitbook hint and file extensions to mkdocs-compatible format. e.g.
 # --------- replace ---------
@@ -58,11 +72,14 @@ def code_group(groups):
 # !!! warning
 #     some text
 gb_hint_rg = r'{% hint style=\"(.*)\" %}(.*|[\s\S]+?){% endhint %}'
+
+
 def hint_group(groups):
     hint_type = groups.group(1)
     hint_content = groups.group(2)
     hint_content = hint_content.replace("\n", "\n\t")
     return "!!! " + hint_type + "\n" + hint_content
+
 
 # replace gitbook tab and file extensions to mkdocs-compatible format. e.g.
 # --------- replace ---------
@@ -73,33 +90,44 @@ def hint_group(groups):
 # ### warning
 #     some text
 gb_tab_rg = r'{% tab title=\"(.*)\" %}(.*|[\s\S]+?){% endtab %}'
+
+
 def tab_group(groups):
     tab_type = groups.group(1)
     tab_content = groups.group(2)
     tab_content = tab_content.replace("\n", "\n\t")
     return "=== \"" + tab_type + "\"\n" + tab_content
 
+
 # replace gitbook embed to mkdocs-compatible format. e.g.
 # --------- replace ---------
 # {% embed url="https://youtu.be/..." %}
 gb_embedY_rg = r'{% embed url=\"https://w*\.*youtu.*/(.*)\" %}'
+
+
 def embedY_group(groups):
     embedY_url = groups.group(1)
     return "<iframe width=\"560\" height=\"315\" src=\"https://www.youtube.com/embed/" + embedY_url + "\" title=\"YouTube video player\" frameborder=\"0\" allow=\"accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture\" allowfullscreen></iframe>"
-    
+
+
 # replace gitbook embed to mkdocs-compatible format. e.g.
 # --------- replace ---------
 # {% embed url="..." %}
 gb_embed_rg = r'{% embed url=\"(.*)\" %}'
+
+
 def embed_group(groups):
     embed_url = groups.group(1)
-    #return "<div class=\"embed\">[" + embed_url  + "](" + embed_url + ")</div>"
-    return "<div class=\"embed\"><i class=\"fas fa-link\"></i><a href=\"" + embed_url  + "\">" + embed_url + "</a></div>"
+    # return "<div class=\"embed\">[" + embed_url  + "](" + embed_url + ")</div>"
+    return "<div class=\"embed\"><i class=\"fas fa-link\"></i><a href=\"" + embed_url + "\">" + embed_url + "</a></div>"
+
 
 # replace gitbook embed to mkdocs-compatible format. e.g.
 # --------- replace ---------
 # {% file src="..." %}
 gb_file1_rg = r'{% file src=\"(.*)\" %}\n(.*|[\s\S]+?)\n{% endfile %}'
+
+
 def file1_group(groups):
     global assets_dict
 
@@ -110,9 +138,12 @@ def file1_group(groups):
     if not file_src.startswith("http") and asset not in assets_dict:
         assets_dict[asset] = asset
 
-    return "!!! file\n\n\t[" + asset  + "](" + file_src + ")"
+    return "!!! file\n\n\t[" + asset + "](" + file_src + ")"
+
 
 gb_file2_rg = r'{% file src=\"(.*)\" %}'
+
+
 def file2_group(groups):
     global assets_dict
 
@@ -122,13 +153,16 @@ def file2_group(groups):
     # Add asset to list if not found in array
     if not file_src.startswith("http") and asset not in assets_dict:
         assets_dict[asset] = asset
-        
+
     return "!!! file\n\n\t[" + asset + "](" + file_src + ")"
 
+
 # Find image
-#img_index = 1
+# img_index = 1
 # Regex for image
 gb_img_rg = r'\!\[.*\]\(<?(.*)/(.*)>?\)'
+
+
 def img_group(groups):
     global assets_dict
     global img_index
@@ -137,7 +171,7 @@ def img_group(groups):
     img_src = groups.group(2).replace('\\', '')
 
     # Fix ending '>'
-    img_src = img_src.replace('>', '');
+    img_src = img_src.replace('>', '')
     img = os.path.basename(img_src)
     img_ext = os.path.splitext(os.path.basename(img_src))[1]
     img_index = len(assets_dict)
@@ -153,7 +187,10 @@ def img_group(groups):
 
     return "![](" + img_path + "/" + assets_dict[img] + ")"
 
+
 gb_figure_rg = r'<figure><img src=\"(.*)/(.*)\" alt=\"\"><figcaption></figcaption></figure>'
+
+
 def figure_group(groups):
     global assets_dict
     global img_index
@@ -162,7 +199,7 @@ def figure_group(groups):
     img_src = groups.group(2).replace('\\', '')
 
     # Fix ending '>'
-    img_src = img_src.replace('>', '');
+    img_src = img_src.replace('>', '')
 
     img = os.path.basename(img_src)
     img_ext = os.path.splitext(os.path.basename(img_src))[1]
@@ -175,42 +212,50 @@ def figure_group(groups):
     print("... " + img_path + ", " + img_src + " >> " + assets_dict[img])
     return "![](" + img_path + "/" + assets_dict[img] + ")"
 
-#endregion #####################################################################
+# endregion #####################################################################
 ################################################################################
 
-# Delete docs/*
-if os.path.exists(doc_root):
-    shutil.rmtree(doc_root)
-    print("... deleted: " + doc_root)
+
+# Delete target dir
+if os.path.exists(target_dir):
+    shutil.rmtree(target_dir)
+    print("... deleted: " + target_dir)
 
 # Get all folders
-folders = glob.glob("*/")
+
+
+full_img_dest = os.path.join(target_dir, img_dest)
 
 # Create docs/images
-if not os.path.exists(doc_root + img_dest):
-    os.makedirs(doc_root + img_dest)
-    print("... created: " + doc_root + ", " + doc_root + img_dest)
+if not os.path.exists(full_img_dest):
+    os.makedirs(full_img_dest)
+    print(f'... created: {target_dir}, {full_img_dest}')
 
     # Copy md-pages tree to docs/
-    for md_file in glob.glob("*.md"):
-        shutil.copy(md_file, "docs/" + md_file)
+    for md_file in glob.glob("*.md", root_dir=source_dir):
+        shutil.copy(
+            os.path.join(source_dir, md_file),
+            os.path.join(target_dir, md_file)
+        )
 
     # Copy all folders to docs/
-    for folder in folders:
-        shutil.copytree(folder, "docs/" + folder)
+    for folder in glob.glob("*/", root_dir=source_dir):
+        shutil.copytree(
+            os.path.join(source_dir, folder),
+            os.path.join(target_dir, folder)
+        )
 else:
     print("... please delete docs/")
     print("Aborting!")
     exit()
 
-# Move into docs/
-os.chdir(doc_root)
+## TODO: CONTINUE WORKING HERE
 
 # Recursiv replace in all *.md
-print("\nStarting copying md-pages to " + doc_root + " ...")
-for md_file in glob.glob("**/*.md", recursive=True):
+print(f'\nStarting modifying md-pages in {target_dir} ...')
+for md_file in glob.glob(os.path.join(target_dir, "**/*.md"), recursive=True):
     with open(md_file, 'r') as file:
-        print("parsing: " + md_file)
+        print(f'parsing: {md_file}')
         filedata = file.read()
 
     # Replace path for assets
@@ -229,30 +274,29 @@ for md_file in glob.glob("**/*.md", recursive=True):
         filedata = re.sub(gb_file2_rg, file2_group, filedata)
     else:
         filedata = filedataTuple[0]
-        
+
     filedata = filedata.replace("{% tabs %}\n", "")
     filedata = filedata.replace("{% endtabs %}\n", "")
     filedata = filedata.replace("{% endembed %}\n", "")
-    
+
     # https://www.markdownguide.org/basic-syntax/#line-break-best-practices
     filedata = filedata.replace("\\\n", "  \n")
-    
+
     # Replace tags
-    filedata = filedata.replace("\<", "&lt;")
-    filedata = filedata.replace("\>", "&gt;")
-    
+    filedata = filedata.replace("<", "&lt;")
+    filedata = filedata.replace(">", "&gt;")
+
     # Find images
     filedata = re.sub(gb_img_rg, img_group, filedata)
     filedata = re.sub(gb_figure_rg, figure_group, filedata)
-    
+
     with open(md_file, 'w') as file:
         file.write(filedata)
 
 print("... done copying md-pages tree")
 
-os.chdir('..')
 
-#region NAV WRITING (disabled) #################################################
+# region NAV WRITING (disabled) #################################################
 
 # Write nav changes to yml
 
@@ -280,7 +324,7 @@ os.chdir('..')
 
 #     # Add empty line
 #     file.write("\n")
-    
+
 #     # Add nav
 #     file.write(generate_nav(private))
 
@@ -293,30 +337,39 @@ os.chdir('..')
 #     print("... assets.json not found")
 #     exit()
 
-#endregion #####################################################################
+# endregion #####################################################################
 ################################################################################
 
-# Write assets_dict to assets.json
-with open('assets.json', 'w', encoding='utf-8') as file:
+# Write assets_dict to assets.json in source dir
+with open(os.path.join(source_dir, 'assets.json'), 'w', encoding='utf-8') as file:
     json.dump(assets_dict, file, indent=4, ensure_ascii=False)
     print("\nWriting assets.json")
 
 # Print number of assets_dict
-print("\nFound " + str(len(assets_dict)) + " assets")
+print(f'\nFound {len(assets_dict)} assets')
 
-# Copy and rename images used i md-pages
-print("\nStarting renaming images ...")
-if os.path.exists(img_source):
-    for key, value in assets_dict.items():
+
+# Copy and rename images used in md-pages
+print("\nStarting renaming and copying images ...")
+full_img_sourcedir = os.path.join(source_dir, img_source)
+
+if os.path.exists(full_img_sourcedir):
+    for original_name, new_name in assets_dict.items():
         # First decode html-entities
-        file_name = urllib.parse.unquote(key)
-        print(file_name + " >> " + value)
+        original_name = urllib.parse.unquote(original_name)
+        
+        print(f' {original_name} >> {new_name}')
 
+        # Prep new full names including paths
+        full_original_name = os.path.join(full_img_sourcedir, original_name)
+        full_new_name = os.path.join(full_img_dest, new_name)
+        
         # Check if image exists with html-entities name
-        if os.path.exists(img_source + file_name):
-            shutil.copy(img_source + file_name, doc_root + img_dest + value)
+        if os.path.exists(full_original_name):
+            shutil.copy(full_original_name, full_new_name)
         else:
-            print("... missing: " + img_source + file_name)
+            print(f' ... missing: {full_original_name}')
+            
     print("... all images renamed and copied")
 else:
     print("... could not copy images to docs/")
