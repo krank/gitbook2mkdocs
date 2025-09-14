@@ -1,12 +1,10 @@
-import os
 import re
 from pathlib import Path
 
+#TODO: divs = elements grouped / next to eachother. Handle?
+
 # Local globals
 local_assets_dict = {}
-local_img_source_dir = ""
-local_img_target_dir = ""
-
 
 # region Declare regexp patterns & result handlers #############################
 ################################################################################
@@ -103,34 +101,33 @@ def code_handler(match: re.Match) -> str:
     return f"``` {code_language}{code_title}{code_lineNumbers}\n{code_actual_code}```"
 
 
-# replace figures with mkdocs-compatible format. e.g.
+# replace images & figures with mkdocs-compatible format. e.g.
 # --------- replace ---------
+# ![Some text](<../.gitbook/assets/Image.png>)
+#
 # <figure><img src="../.gitbook/assets/Image.png" alt="Some text"><figcaption><p>Description</p></figcaption></figure>
 # ---------- with -----------
+# ![Some text](../images/image-12.png)
+
 # ![Some text](../images/image-13.png)
 # /// caption
 # Description
 # ///
 gb_figure_pattern = re.compile(
-    r'<figure><img src=\"(?:<?)(?P<filename>.*?)(?:>?)\" alt=\"(?P<alt>.*?)\"><figcaption>(?P<caption>.*?)</figcaption></figure>\n')
-
-# replace images with mkdocs-compatible format. e.g.
-# --------- replace ---------
-# ![Some text](<../.gitbook/assets/Image.png>)
-# ---------- with -----------
-# ![Some text](../images/image-13.png)
-gb_image_pattern = re.compile(r'\!\[(?P<alt>.*)\]\(<?(?P<filename>.*?)>?\)\n')
+    r'<figure>\s*?<img src=\"(?:<?)(?P<filename>.*?)(?:>?)\" alt=\"(?P<alt>.*?)\">\s*?(?:<figcaption>(?P<caption>[\S\s]*?)</figcaption>)?\s*?</figure>')
+gb_image_pattern = re.compile(r'\!\[(?P<alt>.*)\]\(<?(?P<filename>.*)\)')
 
 
 def image_handler(match: re.Match) -> str:
-    global local_assets_dict
-    img_filename = Path(match.group("filename"))
+
+    img_filename = Path(
+        str(match.group("filename"))
+        .rstrip('>')
+    )
+
     img_alt = match.group("alt")
     img_caption = match.group(
         "caption") if "caption" in match.groupdict() else ""
-
-    # img_basename = os.path.basename(img_filename)
-    # img_ext = os.path.splitext(img_basename)[1]
 
     img_index = len(local_assets_dict) + 1
     img_new_filename = f'image-{img_index}{img_filename.suffix}'
@@ -144,15 +141,44 @@ def image_handler(match: re.Match) -> str:
         + (f'///\n{img_caption}\n///\n' if img_caption != "" else '')
 
 
+# replace gitbook embed to mkdocs-compatible format. e.g.
+# --------- replace ---------
+# {% file src="https://example.com/example.pdf" %}
+# {% file src="https://example.com/example2.pdf" %}
+#   Caption
+# {% endfile %}
+# ---------- with -----------
+# !!! file
+#   [](https://example.com/example.pdf)
+# # !!! file
+#   [Caption](https://example.com/example 2.pdf)
+gb_file_pattern = re.compile(
+    r'{% file src=\"(?P<filename>.*)\" %}(?:\n(?P<caption>.*?)\n{% endfile %})?')
+
+
+def file_handler(match: re.Match) -> str:
+
+    file_filename = Path(match.group("filename"))
+    file_caption = match.group("caption") \
+        if "caption" in match.groupdict() else ""
+
+    if file_filename.name not in local_assets_dict:
+        local_assets_dict[file_filename.name] = file_filename.name
+
+    return '!!! file' \
+        + f'\n    [{file_filename.name}]({file_filename})' \
+        + (f'\n    {file_caption}' if file_caption != None else "")
+
 # endregion ####################################################################
 # ===============================================================================
 
 # ##############################################################################
 
 
-def replacements(filedata: str, assets: dict[str, str], img_source_dir: str, img_target_dir: str) -> tuple[str, dict[str, str]]:
+def replacements(filedata: str, images_dict: dict[str, str], asset_source_dir: str, asset_target_dir: str) -> tuple[str, dict[str, str]]:
     global local_assets_dict
-    local_assets_dict = assets
+    global local_assets_dict
+    local_assets_dict = images_dict
 
     filedata = gb_hint_pattern.sub(hint_handler, filedata)
     filedata = gb_tab_pattern.sub(tab_handler, filedata)
@@ -160,13 +186,12 @@ def replacements(filedata: str, assets: dict[str, str], img_source_dir: str, img
     filedata = gb_embed_pattern.sub(embed_handler, filedata)
     filedata = gb_code_pattern.sub(code_handler, filedata)
 
-    # Images & figures
-    filedata = filedata.replace(img_source_dir, img_target_dir)
+    # Images, figures and files
+    filedata = filedata.replace(asset_source_dir, asset_target_dir)
 
     filedata = gb_image_pattern.sub(image_handler, filedata)
     filedata = gb_figure_pattern.sub(image_handler, filedata)
-
-    # (Files)
+    filedata = gb_file_pattern.sub(file_handler, filedata)
 
     # Stuff to remove
     removals = [
@@ -181,30 +206,3 @@ def replacements(filedata: str, assets: dict[str, str], img_source_dir: str, img
     filedata = filedata.replace("\\\n", "  \n")
 
     return filedata, local_assets_dict
-
-
-# # replace gitbook embed to mkdocs-compatible format. e.g.
-# # --------- replace ---------
-# # {% file src="..." %}
-# #assets_dict = {}
-# gb_file1_rg = r'{% file src=\"(.*)\" %}\n(.*|[\s\S]+?)\n{% endfile %}'
-# def file1_group(groups):
-#     file_src = groups.group(1)
-#     asset = groups.group(2)
-
-#     # Add asset to list if not found in array
-#     if asset not in assets_dict:
-#         assets_dict[asset] = asset
-
-#     return "!!! file\n\n\t[" + asset  + "](" + urllib.parse.quote(file_src) + ")"
-
-# gb_file2_rg = r'{% file src=\"(.*)\" %}'
-# def file2_group(groups):
-#     file_src = groups.group(1)
-#     asset = file_src.split('/')[-1]
-
-#     # Add asset to list if not found in array
-#     if asset not in assets_dict:
-#         assets_dict[asset] = asset
-
-#     return "!!! file\n\n\t[" + asset + "](" + urllib.parse.quote(file_src) + ")"

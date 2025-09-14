@@ -1,7 +1,6 @@
 #!/usr/bin/python3
 
-# TODO: Make it use summary_nav_yml
-
+# TODO: Add support for hidden pages (must read contents of actual md, info is in frontmatter) (use .hidden.md filename)
 # TODO: Add commandline parameters for source and dest directory
 # TODO: Modularize
 
@@ -9,12 +8,12 @@ import sys
 import glob
 import os
 import shutil
-import re
 import json
 import urllib.parse
 from pathlib import Path
-import regexp
 
+import filemod
+import summary_nav_yml
 
 # Read dash parameters
 private = False
@@ -30,54 +29,11 @@ docs_target_dir = Path("_csharp_ref_old/docs")
 docs_source_dir = Path("_csharp_ref_old")
 
 # Image subfolder names
-img_source_dir = ".gitbook/assets"
-img_target_dir = "images"
+asset_source_dir = ".gitbook/assets"
+asset_target_dir = "assets"
 
 # Dictionary to collect assets
 assets_dict = {}
-
-
-# region REGEXPS ###############################################################
-################################################################################
-
-# replace gitbook embed to mkdocs-compatible format. e.g.
-# --------- replace ---------
-# {% file src="..." %}
-gb_file1_rg = r'{% file src=\"(.*)\" %}\n(.*|[\s\S]+?)\n{% endfile %}'
-
-
-def file1_group(groups):
-    global assets_dict
-
-    file_src = groups.group(1).replace('\\', '')
-    asset = groups.group(2).replace('\\', '')
-
-    # Add asset to list if not found in array
-    if not file_src.startswith("http") and asset not in assets_dict:
-        assets_dict[asset] = asset
-
-    return "!!! file\n\n\t[" + asset + "](" + file_src + ")"
-
-
-gb_file2_rg = r'{% file src=\"(.*)\" %}'
-
-
-def file2_group(groups):
-    global assets_dict
-
-    file_src = groups.group(1).replace('\\', '')
-    asset = file_src.split('/')[-1].replace('\\', '')
-
-    # Add asset to list if not found in array
-    if not file_src.startswith("http") and asset not in assets_dict:
-        assets_dict[asset] = asset
-
-    return "!!! file\n\n\t[" + asset + "](" + file_src + ")"
-
-
-
-# endregion ####################################################################
-# ===============================================================================
 
 # region COPY FILES ############################################################
 ################################################################################
@@ -88,7 +44,7 @@ if docs_target_dir.exists():
     shutil.rmtree(docs_target_dir)
     print(f'... deleted: {docs_target_dir}')
 
-full_img_target_dir = Path(docs_target_dir, img_target_dir)
+full_img_target_dir = Path(docs_target_dir, asset_target_dir)
 
 # Original folders declared here so if destination is a subfolder it's not included
 original_folders = glob.glob("*/", root_dir=docs_source_dir)
@@ -137,19 +93,8 @@ for md_file in docs_target_dir.glob('**/*.md'):
     print(f'parsing: {md_file}')
     filedata = md_file.read_text(encoding='utf-8')
 
-    filedata, assets_dict = regexp.replacements(
-        filedata, assets_dict, img_source_dir, img_target_dir)
-
-    # Long or short file description?
-    filedataTuple = re.subn(gb_file1_rg, file1_group, filedata)
-    if filedataTuple[1] == 0:
-        filedata = re.sub(gb_file2_rg, file2_group, filedata)
-    else:
-        filedata = filedataTuple[0]
-
-    # Find images
-    # filedata = re.sub(gb_img_rg, img_group, filedata)
-    # filedata = re.sub(gb_figure_rg, figure_group, filedata)
+    filedata, assets_dict = filemod.replacements(
+        filedata, assets_dict, asset_source_dir, asset_target_dir)
 
     md_file.write_text(filedata, encoding='utf-8')
 
@@ -202,6 +147,8 @@ print("... done copying md-pages tree")
 # endregion #####################################################################
 # ===============================================================================
 
+summary_nav_yml.generate_nav_ymls(docs_target_dir)
+
 # region ASSET MANAGEMENT ######################################################
 ################################################################################
 # Write assets_dict to assets.json in source dir
@@ -215,12 +162,12 @@ with asset_file.open('w', encoding='utf-8') as file:
 print(f'\nFound {len(assets_dict)} assets')
 
 
-# Copy and rename images used in md-pages
-print("\nStarting renaming and copying images ...")
+# Copy and rename assets used in md-pages
+print("\nStarting renaming and copying assets ...")
 
-full_img_sourcedir = Path(docs_source_dir, img_source_dir)
+full_asset_sourcedir = Path(docs_source_dir, asset_source_dir)
 
-if full_img_sourcedir.exists():
+if full_asset_sourcedir.exists():
     for original_name, new_name in assets_dict.items():
         # First decode html-entities
         original_name = urllib.parse.unquote(original_name)
@@ -228,7 +175,7 @@ if full_img_sourcedir.exists():
         print(f' {original_name} >> {new_name}')
 
         # Prep new full names including paths
-        full_original_name = full_img_sourcedir / original_name
+        full_original_name = full_asset_sourcedir / original_name
         full_new_name = full_img_target_dir / new_name
 
         # Check if image exists with html-entities name
@@ -237,9 +184,9 @@ if full_img_sourcedir.exists():
         else:
             print(f' ... missing: {full_original_name}')
 
-    print("... all images renamed and copied")
+    print("... all assets renamed and copied")
 else:
-    print("... could not copy images to docs/")
+    print("... could not copy assets to docs/")
 
 # endregion ####################################################################
 # ===============================================================================
