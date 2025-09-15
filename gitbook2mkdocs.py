@@ -66,17 +66,27 @@ if not os.path.exists(full_img_target_dir):
 
     # Copy md-pages tree to docs/
     for md_file in glob.glob("*.md", root_dir=docs_source_dir):
+        source_file = docs_source_dir / md_file
+        target_file: Path = docs_target_dir / md_file
+
+        frontmatter = filemod.read_frontmatter(source_file)
+
+        if 'hidden' in frontmatter and frontmatter['hidden'] == True:
+            target_file = Path(
+                target_file.parent / (target_file.stem + ".hidden" + target_file.suffix))
+
         shutil.copy(
-            docs_source_dir / md_file,
-            docs_target_dir / md_file
+            source_file,
+            target_file
         )
-        print(f'Copying {md_file}')
+        print(f'Copying {md_file} -> {target_file.name}')
+
 
 else:
     print("... please delete docs/")
     print("Aborting!")
     exit()
-
+exit()
 # endregion ####################################################################
 # ===============================================================================
 

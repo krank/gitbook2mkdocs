@@ -1,5 +1,6 @@
 import re
 from pathlib import Path
+import yaml
 
 #TODO: divs = elements grouped / next to eachother. Handle?
 
@@ -18,7 +19,7 @@ local_assets_dict = {}
 # !!! warning
 #     some text
 gb_hint_pattern = re.compile(
-    r'{% hint style=\"(?P<style>.*)\" %}(?P<content>.*|[\s\S]+?){% endhint %}')
+    r'{% hint style=\"(?P<style>.*)\" %}\n?(?P<content>.*|[\s\S]+?){% endhint %}')
 
 
 def hint_handler(match: re.Match) -> str:
@@ -206,3 +207,13 @@ def replacements(filedata: str, images_dict: dict[str, str], asset_source_dir: s
     filedata = filedata.replace("\\\n", "  \n")
 
     return filedata, local_assets_dict
+
+
+def read_frontmatter(mdfile: Path) -> dict[str, object]:
+    pattern = re.compile(r'^---\n(?P<frontmatter>[\S\s]*?)\n---')
+    
+    match = pattern.match(mdfile.read_text())
+    if match and match.group('frontmatter'):
+        yml:dict[str, object] = yaml.safe_load(match.group('frontmatter'))
+        return yml
+    return {}

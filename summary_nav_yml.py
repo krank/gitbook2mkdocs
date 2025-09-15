@@ -13,7 +13,6 @@ tag_output_file = Path("tags.xml")
 name_trim_pattern = re.compile(r"^(##?|\*) ")
 name_sub_pattern = re.compile(
     r'\[(?P<title>.*)\]\((?P<filename>.*.md)\)')
-# r"\[(?P<title>.*)\]\((?:(?P<path>.*)/)?(?P<filename>.*.md)\)")
 
 # Set flags
 flag_tag_print = False
