@@ -1,8 +1,13 @@
 import re
 from pathlib import Path
+from textwrap import indent
 import yaml
 
-#TODO: divs = elements grouped / next to eachother. Handle?
+# FIXME: Anchors with ä (ae), ö (oe), or using . (removed in mkdocs)
+#   grundlaeggande/konsollen-console.md#console.writeline ->consolewriteline
+
+# FIXME: Links to directories; "unrecognized relative link"
+# TODO: divs = elements grouped / next to eachother. Handle?
 
 # Local globals
 local_assets_dict = {}
@@ -19,12 +24,12 @@ local_assets_dict = {}
 # !!! warning
 #     some text
 gb_hint_pattern = re.compile(
-    r'{% hint style=\"(?P<style>.*)\" %}\n?(?P<content>.*|[\s\S]+?){% endhint %}')
+    r'{% hint style=\"(?P<style>.*)\" %}\n?(?P<content>.*|[\s\S]+?)\n?{% endhint %}')
 
 
 def hint_handler(match: re.Match) -> str:
     hint_style = match.group("style")
-    hint_content = str(match.group("content")).replace("\n", "\n\t")
+    hint_content = indent(str(match.group("content")), '    ')
 
     return f"!!! {hint_style}\n{hint_content}"
 
@@ -117,6 +122,7 @@ def code_handler(match: re.Match) -> str:
 gb_figure_pattern = re.compile(
     r'<figure>\s*?<img src=\"(?:<?)(?P<filename>.*?)(?:>?)\" alt=\"(?P<alt>.*?)\">\s*?(?:<figcaption>(?P<caption>[\S\s]*?)</figcaption>)?\s*?</figure>')
 gb_image_pattern = re.compile(r'\!\[(?P<alt>.*)\]\(<?(?P<filename>.*)\)')
+gb_img_pattern = re.compile(r'<img src=\"(?P<filename>.*?)\" alt=\"(?P<alt>.*?)\".*?>')
 
 
 def image_handler(match: re.Match) -> str:
@@ -136,7 +142,7 @@ def image_handler(match: re.Match) -> str:
     if img_filename.name not in local_assets_dict:
         local_assets_dict[img_filename.name] = img_new_filename
 
-    print('  {img_path}, {img_filename} >> {img_new_filename}')
+    print(f'  {img_filename} >> {img_new_filename}')
 
     return f'![{img_alt}]({img_filename.parent.as_posix()}/{img_new_filename})\n' \
         + (f'///\n{img_caption}\n///\n' if img_caption != "" else '')
@@ -192,13 +198,15 @@ def replacements(filedata: str, images_dict: dict[str, str], asset_source_dir: s
 
     filedata = gb_image_pattern.sub(image_handler, filedata)
     filedata = gb_figure_pattern.sub(image_handler, filedata)
+    filedata = gb_img_pattern.sub(image_handler, filedata)
     filedata = gb_file_pattern.sub(file_handler, filedata)
 
     # Stuff to remove
     removals = [
         "{% tabs %}\n",
         "{% endtabs %}\n",
-        "{% endembed %}\n"
+        "{% endembed %}\n",
+        "&#x20;"
     ]
     for rem in removals:
         filedata = filedata.replace(rem, "")
@@ -211,9 +219,9 @@ def replacements(filedata: str, images_dict: dict[str, str], asset_source_dir: s
 
 def read_frontmatter(mdfile: Path) -> dict[str, object]:
     pattern = re.compile(r'^---\n(?P<frontmatter>[\S\s]*?)\n---')
-    
+
     match = pattern.match(mdfile.read_text())
     if match and match.group('frontmatter'):
-        yml:dict[str, object] = yaml.safe_load(match.group('frontmatter'))
+        yml: dict[str, object] = yaml.safe_load(match.group('frontmatter'))
         return yml
     return {}

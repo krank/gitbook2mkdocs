@@ -4,6 +4,10 @@ import re
 import os
 from pathlib import Path
 
+import yaml
+
+Yml_dict_type = dict[str, list[str | dict[str, str]]]
+
 # base_dir = '_csharp_ref_old'
 nav_filename = Path('.nav.yml')
 summary_filename = Path('SUMMARY.md')
@@ -39,10 +43,10 @@ def tag_print(text: str, indent: int) -> None:
             file.write(line + "\n")
 
 
-def parse(yml_dict: dict[str, list[str]],
+def parse(yml_dict: Yml_dict_type,
           lines: list[str],
           current_line: int,
-          current_indent: int) -> tuple[dict[str, list[str]], int, int]:
+          current_indent: int) -> tuple[Yml_dict_type, int, int]:
 
     # --------------------------------------------------------------------------
     # Title
@@ -133,7 +137,8 @@ def parse(yml_dict: dict[str, list[str]],
             #  this chapter, so combine the chapter's title with its path
             #  e.g. Chapter Title : chapter-title
             last_added_key = Path(list(yml_dict)[-1])
-            line_to_add = line_trimmed + ": " + last_added_key.parent.as_posix()
+            line_to_add = {
+                line_trimmed: last_added_key.parent.as_posix()}
 
             yml_dict[current_title].append(line_to_add)
 
@@ -167,8 +172,9 @@ def parse(yml_dict: dict[str, list[str]],
                 if line_data and line_data.group('filename'):
                     entry_filename = Path(line_data.group('filename')) \
                         if line_data.group('filename') else Path("")
-                    entry_title = str(line_data.group(
-                        'title')).replace('\\', "")
+                    entry_title = str(
+                        line_data.group('title')
+                    ).replace('\\', "")
 
                     if ":" in entry_title:
                         entry_title = '"' + entry_title + '"'
@@ -177,17 +183,15 @@ def parse(yml_dict: dict[str, list[str]],
 
                     # For subsections, don't add the readme, add the last
                     #  section of the path instead, with the title
-                    if entry_filename.name == "README.md" and entry_filename.parents:
-                        line_to_add = entry_title \
-                            + ": " \
-                            + entry_filename.parent.name
+                    if entry_filename.name == 'README.md' and entry_filename.parents and current_indent > 0:
+                        line_to_add = {
+                            entry_title: entry_filename.parent.name}
 
                     elif flag_always_use_titles:
-                        line_to_add = entry_title \
-                            + ": " \
-                            + entry_filename.as_posix()
+                        line_to_add = {
+                            entry_title: entry_filename.as_posix()}
                     else:
-                        line_to_add = entry_filename.as_posix()
+                        line_to_add = entry_filename.name
 
                     tag_print(str(line_to_add) + "/", current_indent + 1)
 
@@ -211,7 +215,7 @@ def parse(yml_dict: dict[str, list[str]],
     return (yml_dict, current_line, current_indent-1)
 
 
-def make_navyml(base_dir: Path) -> dict[str, list[str]]:
+def make_nav_yml(base_dir: Path) -> Yml_dict_type:
     summary_full_filename = base_dir / summary_filename
     print(summary_full_filename)
 
@@ -230,30 +234,40 @@ def make_navyml(base_dir: Path) -> dict[str, list[str]]:
             for key in yml_dict.keys():
                 print("# " + key)
                 for line in yml_dict[key]:
-                    print("     > " + line)
+                    print("     > " + str(line))
 
     return yml_dict
 
 
-def create_files(base_dir: Path, yml_dict: dict[str, list[str]]) -> None:
+def create_files(base_dir: Path, yml_dict: Yml_dict_type) -> None:
     for filename, content in yml_dict.items():
         full_filename = base_dir / filename
 
-        res = list(map(lambda line: f"  - {line}\n", content))
-        res.insert(0, "nav:\n")
+        yml_structure: dict[str, object] = {
+            'ignore': '*.hidden.md'
+        }
 
         if flag_include_star:
-            res.append('  - "*"')
+            content.append('*')
+
+        yml_structure["nav"] = content
+
+        yml_str = yaml.safe_dump(yml_structure) \
+            .replace("'*'", '"*"')
 
         try:
             with full_filename.open("w", encoding="utf-8") as file:
-                file.writelines(res)
+                file.write(yml_str)
         except:
             print(f"Failed to create {full_filename}")
 
 
-def generate_nav_ymls(base_dir: Path, include_star: bool = True):
+def generate_nav_ymls(base_dir: Path, include_star: bool = True, always_use_titles: bool = False):
     global flag_include_star
+    global flag_always_use_titles
+
     flag_include_star = include_star
-    yml_dict = make_navyml(base_dir)
+    flag_always_use_titles = always_use_titles
+
+    yml_dict = make_nav_yml(base_dir)
     create_files(base_dir, yml_dict)

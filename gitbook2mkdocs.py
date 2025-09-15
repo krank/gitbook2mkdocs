@@ -1,8 +1,12 @@
 #!/usr/bin/python3
 
-# TODO: Add support for hidden pages (must read contents of actual md, info is in frontmatter) (use .hidden.md filename)
 # TODO: Add commandline parameters for source and dest directory
 # TODO: Modularize
+# TODO: Fix it so .hidden files' names are properly changed everywhere
+# TODO: Fix <mark></mark> for inline code
+
+# Related links:
+# - https://lukasgeiter.github.io/mkdocs-awesome-nav/
 
 import sys
 import glob
@@ -24,7 +28,8 @@ if len(sys.argv) > 1:
 print("Starting...")
 
 # Root folder for mkdocs
-docs_target_dir = Path("_csharp_ref_old/docs")
+docs_target_dir = Path("docs")
+# docs_target_dir = Path("_csharp_ref_old/docs")
 # Root source folder
 docs_source_dir = Path("_csharp_ref_old")
 
@@ -86,9 +91,9 @@ else:
     print("... please delete docs/")
     print("Aborting!")
     exit()
-exit()
+
 # endregion ####################################################################
-# ===============================================================================
+# ==============================================================================
 
 # region MODIFY FILES ##########################################################
 ################################################################################
@@ -111,56 +116,21 @@ for md_file in docs_target_dir.glob('**/*.md'):
 print("... done copying md-pages tree")
 
 # endregion ####################################################################
-# ===============================================================================
+# ==============================================================================
 
-# region NAV WRITING (disabled) ################################################
+# region NAV WRITING ###########################################################
+################################################################################
 
-# Write nav changes to yml
+summary_nav_yml.generate_nav_ymls(docs_target_dir,
+                                  include_star=True,
+                                  always_use_titles=False)
 
-# Add link to folder .git for mkdocs-git-revision-date-localized-plugin to work
-# os.symlink("../.git", doc_root + ".git")
-# print("... created: " + doc_root + ".git")
-
-# Create new mkdocs.yml from head.yml an base.yml
-# print("... creating mkdocs.yml")
-
-# # Check if head.yml and base.yml exist
-# if not os.path.isfile('head.yml'):
-#     print("... head.yml not found")
-#     exit()
-# if not os.path.isfile('base.yml'):
-#     print("... base.yml not found")
-#     exit()
-
-# with open('head.yml', 'r', encoding='utf-8') as file:
-#     head_content = file.read()
-# with open('base.yml', 'r', encoding='utf-8') as file:
-#     base_content = file.read()
-# with open('mkdocs.yml', 'w', encoding='utf-8') as file:
-#     file.write(head_content + base_content)
-
-#     # Add empty line
-#     file.write("\n")
-
-#     # Add nav
-#     file.write(generate_nav(private))
-
-#     # Print response
-#     print("... done rebuilding nav")
-
-
-# Check if assets.json exists
-# if not os.path.isfile('assets.json'):
-#     print("... assets.json not found")
-#     exit()
-
-# endregion #####################################################################
-# ===============================================================================
-
-summary_nav_yml.generate_nav_ymls(docs_target_dir)
+# endregion ####################################################################
+# ==============================================================================
 
 # region ASSET MANAGEMENT ######################################################
 ################################################################################
+
 # Write assets_dict to assets.json in source dir
 asset_file = Path(docs_source_dir, 'assets.json')
 
@@ -199,6 +169,6 @@ else:
     print("... could not copy assets to docs/")
 
 # endregion ####################################################################
-# ===============================================================================
+# ==============================================================================
 
 print("Done!")
