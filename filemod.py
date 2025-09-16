@@ -3,10 +3,12 @@ from pathlib import Path
 from textwrap import indent
 from fileman import Asset_dict_type
 
-# FIXME: Anchors with ä (ae), ö (oe), or using . (removed in mkdocs)
+# FIXME: Make every modification ignore code blocks. Temp replace with uuids?
+
+# TODO: Anchors with ä (ae), ö (oe), or using . (removed in mkdocs)
 #   grundlaeggande/konsollen-console.md#console.writeline ->consolewriteline
 
-# FIXME: Links to directories; "unrecognized relative link"?
+# TODO: Links to directories; "unrecognized relative link"?
 # TODO: Fix <mark></mark> for inline code
 
 # Local globals
@@ -208,8 +210,8 @@ def make_replacements(filedata: str, assets_dict: Asset_dict_type, asset_source_
         '{% tabs %}\n',
         '{% endtabs %}\n',
         '{% endembed %}\n',
-        '<div>\n',
-        '</div>\n',
+        '<div>',
+        '</div>',
         '&#x20;'
     ]
     for rem in removals:

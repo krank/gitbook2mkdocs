@@ -1,6 +1,5 @@
 #!/usr/bin/python3
 
-# TODO: Modularize
 # TODO: Fix it so .hidden files' names are properly changed everywhere
 
 # Related links:
