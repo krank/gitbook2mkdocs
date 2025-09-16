@@ -1,17 +1,16 @@
 import re
 from pathlib import Path
 from textwrap import indent
-import yaml
+from fileman import Asset_dict_type
 
 # FIXME: Anchors with ä (ae), ö (oe), or using . (removed in mkdocs)
 #   grundlaeggande/konsollen-console.md#console.writeline ->consolewriteline
 
 # FIXME: Links to directories; "unrecognized relative link"?
-# TODO: divs = elements grouped / next to eachother. Handle?
 # TODO: Fix <mark></mark> for inline code
 
 # Local globals
-local_assets_dict = {}
+local_assets_dict: Asset_dict_type = {}
 
 # region Declare regexp patterns & result handlers #############################
 ################################################################################
@@ -28,7 +27,7 @@ gb_hint_pattern = re.compile(
     r'{% hint style=\"(?P<style>.*)\" %}\n?(?P<content>.*|[\s\S]+?)\n?{% endhint %}')
 
 
-def hint_handler(match: re.Match) -> str:
+def hint_handler(match: re.Match[str]) -> str:
     hint_style = match.group("style")
     hint_content = indent(str(match.group("content")), '    ')
 
@@ -47,7 +46,7 @@ gb_tab_pattern = re.compile(
     r'{% tab title=\"(?P<title>.*)\" %}(?P<content>.*|[\s\S]+?){% endtab %}')
 
 
-def tab_handler(match: re.Match) -> str:
+def tab_handler(match: re.Match[str]) -> str:
     tab_title = match.group("title")
     tab_content = str(match.group("content")).replace("\n", "\n\t")
 
@@ -63,7 +62,7 @@ gb_embed_yt_pattern = re.compile(
     r'{% embed url=\"https://w*\.*youtu.*/(?P<video_id>.*)\" %}')
 
 
-def embed_yt_handler(match: re.Match) -> str:
+def embed_yt_handler(match: re.Match[str]) -> str:
     video_id = match.group("video_id")
     return f'<iframe width="560" height="315" src="https://www.youtube.com/embed/{video_id}" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>'
 
@@ -76,7 +75,7 @@ def embed_yt_handler(match: re.Match) -> str:
 gb_embed_pattern = re.compile(r'{% embed url=\"(?P<url>.*)\" %}')
 
 
-def embed_handler(match: re.Match) -> str:
+def embed_handler(match: re.Match[str]) -> str:
     embed_url = match.group("url")
     return f'<div class="embed"><i class="fas fa-link"></i><a href="{embed_url}">{embed_url}</a></div>"'
 
@@ -96,7 +95,7 @@ gb_code_pattern = re.compile(
     r'{% code ?(?:title=\"(?P<title>.*?)\" )?(?:lineNumbers=\"?(?P<linenums>.*?)\" )?%}\n```(?P<language>.*?)?\n(?P<code>.*|[\s\S]+?)```\n{% endcode %}')
 
 
-def code_handler(match: re.Match) -> str:
+def code_handler(match: re.Match[str]) -> str:
     code_title = f" title=\"{match.group('title')}\"" if match.group(
         'title') else ""
     code_lineNumbers = " linenums=\"1\"" if match.group(
@@ -123,10 +122,11 @@ def code_handler(match: re.Match) -> str:
 gb_figure_pattern = re.compile(
     r'<figure>\s*?<img src=\"(?:<?)(?P<filename>.*?)(?:>?)\" alt=\"(?P<alt>.*?)\">\s*?(?:<figcaption>(?P<caption>[\S\s]*?)</figcaption>)?\s*?</figure>')
 gb_image_pattern = re.compile(r'\!\[(?P<alt>.*)\]\(<?(?P<filename>.*)\)')
-gb_img_pattern = re.compile(r'<img src=\"(?P<filename>.*?)\" alt=\"(?P<alt>.*?)\".*?>')
+gb_img_pattern = re.compile(
+    r'<img src=\"(?P<filename>.*?)\" alt=\"(?P<alt>.*?)\".*?>')
 
 
-def image_handler(match: re.Match) -> str:
+def image_handler(match: re.Match[str]) -> str:
 
     img_filename = Path(
         str(match.group("filename"))
@@ -146,7 +146,7 @@ def image_handler(match: re.Match) -> str:
     print(f'  {img_filename} >> {img_new_filename}')
 
     return f'![{img_alt}]({img_filename.parent.as_posix()}/{img_new_filename})\n' \
-        + (f'///\n{img_caption}\n///\n' if img_caption != "" else '')
+        + (f'/// caption\n{img_caption}\n///\n' if img_caption != "" else '')
 
 
 # replace gitbook embed to mkdocs-compatible format. e.g.
@@ -164,7 +164,7 @@ gb_file_pattern = re.compile(
     r'{% file src=\"(?P<filename>.*)\" %}(?:\n(?P<caption>.*?)\n{% endfile %})?')
 
 
-def file_handler(match: re.Match) -> str:
+def file_handler(match: re.Match[str]) -> str:
 
     file_filename = Path(match.group("filename"))
     file_caption = match.group("caption") \
@@ -183,10 +183,10 @@ def file_handler(match: re.Match) -> str:
 # ##############################################################################
 
 
-def replacements(filedata: str, images_dict: dict[str, str], asset_source_dir: str, asset_target_dir: str) -> tuple[str, dict[str, str]]:
+def make_replacements(filedata: str, assets_dict: Asset_dict_type, asset_source_dir: Path, asset_target_dir: Path) -> tuple[str, dict[str, str]]:
     global local_assets_dict
     global local_assets_dict
-    local_assets_dict = images_dict
+    local_assets_dict = assets_dict
 
     filedata = gb_hint_pattern.sub(hint_handler, filedata)
     filedata = gb_tab_pattern.sub(tab_handler, filedata)
@@ -195,7 +195,8 @@ def replacements(filedata: str, images_dict: dict[str, str], asset_source_dir: s
     filedata = gb_code_pattern.sub(code_handler, filedata)
 
     # Images, figures and files
-    filedata = filedata.replace(asset_source_dir, asset_target_dir)
+    filedata = filedata.replace(
+        asset_source_dir.as_posix(), asset_target_dir.as_posix())
 
     filedata = gb_image_pattern.sub(image_handler, filedata)
     filedata = gb_figure_pattern.sub(image_handler, filedata)
@@ -204,25 +205,40 @@ def replacements(filedata: str, images_dict: dict[str, str], asset_source_dir: s
 
     # Stuff to remove
     removals = [
-        "{% tabs %}\n",
-        "{% endtabs %}\n",
-        "{% endembed %}\n",
-        "&#x20;"
+        '{% tabs %}\n',
+        '{% endtabs %}\n',
+        '{% endembed %}\n',
+        '<div>\n',
+        '</div>\n',
+        '&#x20;'
     ]
     for rem in removals:
-        filedata = filedata.replace(rem, "")
+        filedata = filedata.replace(rem, '')
 
     # https://www.markdownguide.org/basic-syntax/#line-break-best-practices
-    filedata = filedata.replace("\\\n", "  \n")
+    filedata = filedata.replace('\\\n', '  \n')
 
     return filedata, local_assets_dict
 
 
-def read_frontmatter(mdfile: Path) -> dict[str, object]:
-    pattern = re.compile(r'^---\n(?P<frontmatter>[\S\s]*?)\n---')
+def modify_files(docs_target_dir: Path, asset_source_dir: Path, asset_target_dir: Path):
 
-    match = pattern.match(mdfile.read_text())
-    if match and match.group('frontmatter'):
-        yml: dict[str, object] = yaml.safe_load(match.group('frontmatter'))
-        return yml
-    return {}
+    # Dictionary to collect assets
+    assets_dict = {}
+
+    print(f'\nStarting to modify md-pages in {docs_target_dir} ...')
+
+    f_count = 0
+
+    for md_file in docs_target_dir.glob('**/*.md'):
+        print(f'parsing: {md_file}')
+        filedata = md_file.read_text(encoding='utf-8')
+
+        filedata, assets_dict = make_replacements(
+            filedata, assets_dict, asset_source_dir, asset_target_dir)
+
+        md_file.write_text(filedata, encoding='utf-8')
+        f_count += 1
+
+    print(f'... done modifying md-pages tree ({f_count} pages)')
+    return assets_dict

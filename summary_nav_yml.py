@@ -6,6 +6,8 @@ from pathlib import Path
 
 import yaml
 
+#TODO: parse function is _very_ long. Can it be shortened?
+
 Yml_dict_type = dict[str, list[str | dict[str, str]]]
 
 # base_dir = '_csharp_ref_old'
@@ -79,7 +81,7 @@ def parse(yml_dict: Yml_dict_type,
         current_title = current_title.as_posix()
 
     yml_dict[current_title] = []
-    paths = []
+    paths: list[Path] = []
 
     # Add a README.md entry at start of every sub-category
     if title_filename:
@@ -222,12 +224,12 @@ def make_nav_yml(base_dir: Path) -> Yml_dict_type:
         print("... SUMMARY.md not found")
         return {}
 
-    yml_dict = {}
+    yml_dict: Yml_dict_type = {}
 
     with summary_full_filename.open("r", encoding="utf-8") as file:
         lines = file.read().splitlines()
 
-        (yml_dict, current_line, current_indent) = parse(yml_dict, lines, 0, 0)
+        yml_dict = parse(yml_dict, lines, 0, 0)[0]
 
         if flag_yml_print:
             for key in yml_dict.keys():
