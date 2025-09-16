@@ -6,8 +6,9 @@ import yaml
 # FIXME: Anchors with ä (ae), ö (oe), or using . (removed in mkdocs)
 #   grundlaeggande/konsollen-console.md#console.writeline ->consolewriteline
 
-# FIXME: Links to directories; "unrecognized relative link"
+# FIXME: Links to directories; "unrecognized relative link"?
 # TODO: divs = elements grouped / next to eachother. Handle?
+# TODO: Fix <mark></mark> for inline code
 
 # Local globals
 local_assets_dict = {}

@@ -217,7 +217,6 @@ def parse(yml_dict: Yml_dict_type,
 
 def make_nav_yml(base_dir: Path) -> Yml_dict_type:
     summary_full_filename = base_dir / summary_filename
-    print(summary_full_filename)
 
     if not summary_full_filename.is_file():
         print("... SUMMARY.md not found")

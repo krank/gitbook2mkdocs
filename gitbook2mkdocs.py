@@ -3,7 +3,6 @@
 # TODO: Add commandline parameters for source and dest directory
 # TODO: Modularize
 # TODO: Fix it so .hidden files' names are properly changed everywhere
-# TODO: Fix <mark></mark> for inline code
 
 # Related links:
 # - https://lukasgeiter.github.io/mkdocs-awesome-nav/
@@ -30,8 +29,12 @@ print("Starting...")
 # Root folder for mkdocs
 docs_target_dir = Path("docs")
 # docs_target_dir = Path("_csharp_ref_old/docs")
+
 # Root source folder
 docs_source_dir = Path("_csharp_ref_old")
+
+# Stylesheet source folder
+css_source_dir = Path("css")
 
 # Image subfolder names
 asset_source_dir = ".gitbook/assets"
@@ -40,9 +43,16 @@ asset_target_dir = "assets"
 # Dictionary to collect assets
 assets_dict = {}
 
+def print_header(text: str):
+    print('\n################################################################################')
+    print(f'   {text}')
+    print('--------------------------------------------------------------------------------')
+
+
 # region COPY FILES ############################################################
 ################################################################################
 
+print_header('Copying files...')
 
 # Delete target dir
 if docs_target_dir.exists():
@@ -59,6 +69,7 @@ if not os.path.exists(full_img_target_dir):
     print(f'... created: {docs_target_dir}, {full_img_target_dir}')
     print('== Copying files and folders ==')
 
+    
     # Copy all folders to docs/
     for folder in original_folders:
         print(f'Copy {folder}')
@@ -70,6 +81,7 @@ if not os.path.exists(full_img_target_dir):
         )
 
     # Copy md-pages tree to docs/
+
     for md_file in glob.glob("*.md", root_dir=docs_source_dir):
         source_file = docs_source_dir / md_file
         target_file: Path = docs_target_dir / md_file
@@ -84,9 +96,8 @@ if not os.path.exists(full_img_target_dir):
             source_file,
             target_file
         )
-        print(f'Copying {md_file} -> {target_file.name}')
 
-
+    print('... done copying md-pages tree')
 else:
     print("... please delete docs/")
     print("Aborting!")
@@ -98,11 +109,12 @@ else:
 # region MODIFY FILES ##########################################################
 ################################################################################
 
-print('== Modifying files ==')
+print_header('Modifying files...')
 
 # Recursiv replace in all *.md
 print(f'\nStarting modifying md-pages in {docs_target_dir} ...')
 
+f_count = 0
 for md_file in docs_target_dir.glob('**/*.md'):
 
     print(f'parsing: {md_file}')
@@ -112,14 +124,17 @@ for md_file in docs_target_dir.glob('**/*.md'):
         filedata, assets_dict, asset_source_dir, asset_target_dir)
 
     md_file.write_text(filedata, encoding='utf-8')
+    f_count += 1
 
-print("... done copying md-pages tree")
+print(f'... done modifying md-pages tree ({f_count} pages)')
 
 # endregion ####################################################################
 # ==============================================================================
 
 # region NAV WRITING ###########################################################
 ################################################################################
+
+print_header('Generate .nav.yml files for "awesome nav" plugin...')
 
 summary_nav_yml.generate_nav_ymls(docs_target_dir,
                                   include_star=True,
@@ -130,6 +145,8 @@ summary_nav_yml.generate_nav_ymls(docs_target_dir,
 
 # region ASSET MANAGEMENT ######################################################
 ################################################################################
+
+print_header('Copy and rename assets...')
 
 # Write assets_dict to assets.json in source dir
 asset_file = Path(docs_source_dir, 'assets.json')
@@ -170,5 +187,23 @@ else:
 
 # endregion ####################################################################
 # ==============================================================================
+
+# region FINISHING TOUCHES #####################################################
+################################################################################
+
+print_header('Finishing touches...')
+
+# CSS
+print('Copying css files')
+for source_file in css_source_dir.glob('*.css'):
+
+    target_file: Path = docs_target_dir / source_file.name
+    print(f' {source_file} >> {target_file}')
+
+    shutil.copy(
+        source_file,
+        target_file
+    )
+print("...copied css files")
 
 print("Done!")
