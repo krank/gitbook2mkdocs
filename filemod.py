@@ -2,6 +2,7 @@ import re
 from pathlib import Path
 from textwrap import indent
 from fileman import Asset_dict_type
+import uuid
 
 # FIXME: Make every modification ignore code blocks. Temp replace with uuids?
 
@@ -13,6 +14,9 @@ from fileman import Asset_dict_type
 
 # Local globals
 local_assets_dict: Asset_dict_type = {}
+
+code_block_dict: dict[str, str] = {}
+
 
 # region Declare regexp patterns & result handlers #############################
 ################################################################################
@@ -109,6 +113,26 @@ def code_handler(match: re.Match[str]) -> str:
     return f"``` {code_language}{code_title}{code_lineNumbers}\n{code_actual_code}```"
 
 
+gb_codeblock_pattern = re.compile(r'```(?P<content>[\S\s]*?)```')
+
+
+def code_block_to_uuid(match: re.Match[str]) -> str:
+    block_content = str(match.group('content'))
+    block_uuid = str(uuid.uuid4())
+    code_block_dict[block_uuid] = block_content
+
+    return f'```{block_uuid}```'
+
+
+def code_uuid_to_block(match: re.Match[str]) -> str:
+    block_uuid = str(match.group('content'))
+    if block_uuid in code_block_dict:
+        block_content = code_block_dict[block_uuid]
+    else:
+        block_content = block_uuid
+
+    return f'```{block_content}```'
+
 # replace images & figures with mkdocs-compatible format. e.g.
 # --------- replace ---------
 # ![Some text](<../.gitbook/assets/Image.png>)
@@ -116,6 +140,7 @@ def code_handler(match: re.Match[str]) -> str:
 # <figure><img src="../.gitbook/assets/Image.png" alt="Some text"><figcaption><p>Description</p></figcaption></figure>
 # ---------- with -----------
 # ![Some text](../images/image-12.png)
+
 
 # ![Some text](../images/image-13.png)
 # /// caption
@@ -179,6 +204,7 @@ def file_handler(match: re.Match[str]) -> str:
         + f'\n    [{file_filename.name}]({file_filename})' \
         + (f'\n    {file_caption}' if file_caption != None else "")
 
+
 # endregion ####################################################################
 # ===============================================================================
 
@@ -189,12 +215,22 @@ def make_replacements(filedata: str, assets_dict: Asset_dict_type, asset_source_
     global local_assets_dict
     global local_assets_dict
     local_assets_dict = assets_dict
+    
+    # Reset dict of uuids and code block contents
+    global code_block_dict
+    code_block_dict = {}
 
+    # Fix code blocks
+    filedata = gb_code_pattern.sub(code_handler, filedata)
+
+    # Replace all code blocks' contents with uuids
+    filedata = gb_codeblock_pattern.sub(code_block_to_uuid, filedata)
+
+    # hints/admonishments, tabs, embeds
     filedata = gb_hint_pattern.sub(hint_handler, filedata)
     filedata = gb_tab_pattern.sub(tab_handler, filedata)
     filedata = gb_embed_yt_pattern.sub(embed_yt_handler, filedata)
     filedata = gb_embed_pattern.sub(embed_handler, filedata)
-    filedata = gb_code_pattern.sub(code_handler, filedata)
 
     # Images, figures and files
     filedata = filedata.replace(
@@ -205,13 +241,14 @@ def make_replacements(filedata: str, assets_dict: Asset_dict_type, asset_source_
     filedata = gb_img_pattern.sub(image_handler, filedata)
     filedata = gb_file_pattern.sub(file_handler, filedata)
 
+    # Replace uuids within code blocks with their contents
+    filedata = gb_codeblock_pattern.sub(code_uuid_to_block, filedata)
+
     # Stuff to remove
     removals = [
         '{% tabs %}\n',
         '{% endtabs %}\n',
         '{% endembed %}\n',
-        '<div>',
-        '</div>',
         '&#x20;'
     ]
     for rem in removals:
