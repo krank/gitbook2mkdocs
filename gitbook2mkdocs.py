@@ -1,6 +1,5 @@
 #!/usr/bin/python3
 
-# TODO: Add commandline parameters for source and dest directory
 # TODO: Modularize
 # TODO: Fix it so .hidden files' names are properly changed everywhere
 
@@ -14,26 +13,38 @@ import shutil
 import json
 import urllib.parse
 from pathlib import Path
+from argparse import ArgumentParser
 
 import filemod
 import summary_nav_yml
 
-# exit()
+# region HANDLE ARGUMENTS ######################################################
+# ------------------------------------------------------------------------------
 
-# Read dash parameters
-private = False
-if len(sys.argv) > 1:
-    if sys.argv[1] == "-p":
-        private = True
+parser = ArgumentParser()
+parser.add_argument('source_path', nargs='?', default='src', type=str)
+parser.add_argument('target_path', nargs='?', default='docs', type=str)
+parser.add_argument('--generate-nav', '-n',
+                    required=False,
+                    type=bool,
+                    default=True,
+                    choices=(True, False),
+                    help='Using SUMMARY.md, generate .nav.yml files for root and all subdirectories. Used by awesome-nav plugin')
+
+# Parse args into dict
+args = vars(parser.parse_args())
+
+# endregion --------------------------------------------------------------------
+# ##############################################################################
+
+# region INITIALIZE ############################################################
+# ------------------------------------------------------------------------------
 
 print("Starting...")
 
-# Root folder for mkdocs
-docs_target_dir = Path("docs")
-# docs_target_dir = Path("_csharp_ref_old/docs")
-
-# Root source folder
-docs_source_dir = Path("_csharp_ref_old")
+# Root folders for gitbook (source) and mkdocs (target)
+docs_source_dir = Path(args['source_path'])
+docs_target_dir = Path(args['target_path'])
 
 # Stylesheet source folder
 extra_source_dir = Path("extra")
@@ -52,8 +63,18 @@ def print_header(text: str):
     print('--------------------------------------------------------------------------------')
 
 
+print("Checking source directory...")
+if docs_source_dir.exists():
+    print(" Source directory exists")
+else:
+    print(" Source directory doesn't exist, aborting")
+    exit()
+
+# endregion --------------------------------------------------------------------
+# ##############################################################################
+
 # region COPY FILES ############################################################
-################################################################################
+# ------------------------------------------------------------------------------
 
 print_header('Copying files...')
 
@@ -105,11 +126,11 @@ else:
     print("Aborting!")
     exit()
 
-# endregion ####################################################################
-# ==============================================================================
+# endregion --------------------------------------------------------------------
+# ##############################################################################
 
 # region MODIFY FILES ##########################################################
-################################################################################
+# ------------------------------------------------------------------------------
 
 print_header('Modifying files...')
 
@@ -130,23 +151,24 @@ for md_file in docs_target_dir.glob('**/*.md'):
 
 print(f'... done modifying md-pages tree ({f_count} pages)')
 
-# endregion ####################################################################
-# ==============================================================================
+# endregion --------------------------------------------------------------------
+# ##############################################################################
 
 # region NAV WRITING ###########################################################
-################################################################################
+# ------------------------------------------------------------------------------
 
-print_header('Generate .nav.yml files for "awesome nav" plugin...')
+if args['generate_nav']:
+    print_header('Generate .nav.yml files for "awesome nav" plugin...')
 
-summary_nav_yml.generate_nav_ymls(docs_target_dir,
-                                  include_star=True,
-                                  always_use_titles=False)
+    summary_nav_yml.generate_nav_ymls(docs_target_dir,
+                                      include_star=True,
+                                      always_use_titles=False)
 
-# endregion ####################################################################
-# ==============================================================================
+# endregion --------------------------------------------------------------------
+# ##############################################################################
 
 # region ASSET MANAGEMENT ######################################################
-################################################################################
+# ------------------------------------------------------------------------------
 
 print_header('Copy and rename assets...')
 
@@ -187,28 +209,35 @@ if full_asset_sourcedir.exists():
 else:
     print("... could not copy assets to docs/")
 
-# endregion ####################################################################
-# ==============================================================================
+# endregion --------------------------------------------------------------------
+# ##############################################################################
 
 # region FINISHING TOUCHES #####################################################
-################################################################################
+# ------------------------------------------------------------------------------
 
 print_header('Finishing touches...')
 
 # CSS
-print('Copying extra files')
-for source_file in extra_source_dir.glob('**/*.*'):
+if extra_source_dir.exists():
+    print('Copying extra files')
+    for source_file in extra_source_dir.glob('**/*.*'):
 
-    target_file: Path = docs_target_dir / \
-        source_file.relative_to(extra_source_dir)
-    print(f' {source_file} >> {target_file}')
+        target_file: Path = docs_target_dir / \
+            source_file.relative_to(extra_source_dir)
+        print(f' {source_file} >> {target_file}')
 
-    target_file.parent.mkdir(parents=True, exist_ok=True)
+        target_file.parent.mkdir(parents=True, exist_ok=True)
 
-    shutil.copy(
-        source_file,
-        target_file
-    )
-print("...copied extra files")
+        shutil.copy(
+            source_file,
+            target_file
+        )
+    print("...copied extra files")
+else:
+    print(
+        f'\'Extra\' file directory "{extra_source_dir}" not found, skipping...')
+
+# endregion --------------------------------------------------------------------
+# ##############################################################################
 
 print("Done!")
