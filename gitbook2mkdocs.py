@@ -18,6 +18,8 @@ from pathlib import Path
 import filemod
 import summary_nav_yml
 
+# exit()
+
 # Read dash parameters
 private = False
 if len(sys.argv) > 1:
@@ -34,7 +36,7 @@ docs_target_dir = Path("docs")
 docs_source_dir = Path("_csharp_ref_old")
 
 # Stylesheet source folder
-css_source_dir = Path("css")
+extra_source_dir = Path("extra")
 
 # Image subfolder names
 asset_source_dir = ".gitbook/assets"
@@ -42,6 +44,7 @@ asset_target_dir = "assets"
 
 # Dictionary to collect assets
 assets_dict = {}
+
 
 def print_header(text: str):
     print('\n################################################################################')
@@ -69,7 +72,6 @@ if not os.path.exists(full_img_target_dir):
     print(f'... created: {docs_target_dir}, {full_img_target_dir}')
     print('== Copying files and folders ==')
 
-    
     # Copy all folders to docs/
     for folder in original_folders:
         print(f'Copy {folder}')
@@ -194,16 +196,19 @@ else:
 print_header('Finishing touches...')
 
 # CSS
-print('Copying css files')
-for source_file in css_source_dir.glob('*.css'):
+print('Copying extra files')
+for source_file in extra_source_dir.glob('**/*.*'):
 
-    target_file: Path = docs_target_dir / source_file.name
+    target_file: Path = docs_target_dir / \
+        source_file.relative_to(extra_source_dir)
     print(f' {source_file} >> {target_file}')
+
+    target_file.parent.mkdir(parents=True, exist_ok=True)
 
     shutil.copy(
         source_file,
         target_file
     )
-print("...copied css files")
+print("...copied extra files")
 
 print("Done!")
