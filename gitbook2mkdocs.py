@@ -1,6 +1,7 @@
 #!/usr/bin/python3
 
 # TODO: Fix it so .hidden files' names are properly changed everywhere
+# TODO: Add argument for silent operation
 
 # Related links:
 # - https://lukasgeiter.github.io/mkdocs-awesome-nav/

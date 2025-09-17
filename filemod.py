@@ -4,13 +4,10 @@ from textwrap import indent
 from fileman import Asset_dict_type
 import uuid
 
-# FIXME: Make every modification ignore code blocks. Temp replace with uuids?
-
 # TODO: Anchors with ä (ae), ö (oe), or using . (removed in mkdocs)
 #   grundlaeggande/konsollen-console.md#console.writeline ->consolewriteline
 
 # TODO: Links to directories; "unrecognized relative link"?
-# TODO: Fix <mark></mark> for inline code
 
 # Local globals
 local_assets_dict: Asset_dict_type = {}
@@ -205,6 +202,20 @@ def file_handler(match: re.Match[str]) -> str:
         + (f'\n    {file_caption}' if file_caption != None else "")
 
 
+# remove unnecessary <mark> tags around inline `code`
+# --------- replace ---------
+#   Type <mark style="color:orange;">`print()`</mark> to print
+# ---------- with -----------
+#   Type <mark style="color:orange;">`print()`</mark> to print
+gb_mark_pattern = re.compile(
+    r'<mark.*?>(?P<content>`.*?`)</mark>')
+
+
+def strip_handler(match: re.Match[str]):
+    return match.group("content")
+
+
+
 # endregion ####################################################################
 # ===============================================================================
 
@@ -215,7 +226,7 @@ def make_replacements(filedata: str, assets_dict: Asset_dict_type, asset_source_
     global local_assets_dict
     global local_assets_dict
     local_assets_dict = assets_dict
-    
+
     # Reset dict of uuids and code block contents
     global code_block_dict
     code_block_dict = {}
@@ -231,6 +242,8 @@ def make_replacements(filedata: str, assets_dict: Asset_dict_type, asset_source_
     filedata = gb_tab_pattern.sub(tab_handler, filedata)
     filedata = gb_embed_yt_pattern.sub(embed_yt_handler, filedata)
     filedata = gb_embed_pattern.sub(embed_handler, filedata)
+
+    filedata = gb_mark_pattern.sub(strip_handler, filedata)
 
     # Images, figures and files
     filedata = filedata.replace(
