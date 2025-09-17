@@ -210,11 +210,35 @@ def file_handler(match: re.Match[str]) -> str:
 gb_mark_pattern = re.compile(
     r'<mark.*?>(?P<content>`.*?`)</mark>')
 
-
 def strip_handler(match: re.Match[str]):
     return match.group("content")
 
 
+gb_link_pattern = re.compile(r'\[(?P<text>.*?)\]\((?P<url>.*?)\)')
+
+def link_handler(match: re.Match[str]):
+    link_text = str(match.group('text'))
+    link_url = str(match.group('url'))
+    
+    # Detect urls leading to local folders, add a README.md
+    if not link_url.startswith('http'):
+        if link_url.endswith('/'):
+            link_url += 'README.md'
+        else:
+            parts = link_url.rsplit('/',1)
+            if len(parts) >= 2 and parts[1].startswith('#'):
+                parts[1] = 'README.md' + parts[1]
+                link_url = '/'.join(parts)
+            
+
+        
+    # Strip ./ from local anchors
+    if link_url.startswith('./#'):
+        link_url = link_url[2:]
+        print(link_url)
+        
+    
+    return f'[{link_text}]({link_url})'
 
 # endregion ####################################################################
 # ===============================================================================
@@ -242,6 +266,7 @@ def make_replacements(filedata: str, assets_dict: Asset_dict_type, asset_source_
     filedata = gb_tab_pattern.sub(tab_handler, filedata)
     filedata = gb_embed_yt_pattern.sub(embed_yt_handler, filedata)
     filedata = gb_embed_pattern.sub(embed_handler, filedata)
+    filedata = gb_link_pattern.sub(link_handler, filedata)
 
     filedata = gb_mark_pattern.sub(strip_handler, filedata)
 
