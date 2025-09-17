@@ -4,10 +4,11 @@ from textwrap import indent
 from fileman import Asset_dict_type
 import uuid
 
+import ux
+
 # TODO: Anchors with ä (ae), ö (oe), or using . (removed in mkdocs)
 #   grundlaeggande/konsollen-console.md#console.writeline ->consolewriteline
 
-# TODO: Links to directories; "unrecognized relative link"?
 
 # Local globals
 local_assets_dict: Asset_dict_type = {}
@@ -167,7 +168,7 @@ def image_handler(match: re.Match[str]) -> str:
     if img_filename.name not in local_assets_dict:
         local_assets_dict[img_filename.name] = img_new_filename
 
-    print(f'  {img_filename} >> {img_new_filename}')
+    ux.print(f'  {img_filename} >> {img_new_filename}')
 
     return f'![{img_alt}]({img_filename.parent.as_posix()}/{img_new_filename})\n' \
         + (f'/// caption\n{img_caption}\n///\n' if img_caption != "" else '')
@@ -210,34 +211,32 @@ def file_handler(match: re.Match[str]) -> str:
 gb_mark_pattern = re.compile(
     r'<mark.*?>(?P<content>`.*?`)</mark>')
 
+
 def strip_handler(match: re.Match[str]):
     return match.group("content")
 
 
 gb_link_pattern = re.compile(r'\[(?P<text>.*?)\]\((?P<url>.*?)\)')
 
+
 def link_handler(match: re.Match[str]):
     link_text = str(match.group('text'))
     link_url = str(match.group('url'))
-    
+
     # Detect urls leading to local folders, add a README.md
     if not link_url.startswith('http'):
         if link_url.endswith('/'):
             link_url += 'README.md'
         else:
-            parts = link_url.rsplit('/',1)
+            parts = link_url.rsplit('/', 1)
             if len(parts) >= 2 and parts[1].startswith('#'):
                 parts[1] = 'README.md' + parts[1]
                 link_url = '/'.join(parts)
-            
 
-        
     # Strip ./ from local anchors
     if link_url.startswith('./#'):
         link_url = link_url[2:]
-        print(link_url)
-        
-    
+
     return f'[{link_text}]({link_url})'
 
 # endregion ####################################################################
@@ -303,12 +302,12 @@ def modify_files(docs_target_dir: Path, asset_source_dir: Path, asset_target_dir
     # Dictionary to collect assets
     assets_dict = {}
 
-    print(f'\nStarting to modify md-pages in {docs_target_dir} ...')
+    ux.print(f'\nStarting to modify md-pages in {docs_target_dir} ...')
 
     f_count = 0
 
     for md_file in docs_target_dir.glob('**/*.md'):
-        print(f'parsing: {md_file}')
+        ux.print(f'parsing: {md_file}')
         filedata = md_file.read_text(encoding='utf-8')
 
         filedata, assets_dict = make_replacements(
@@ -317,5 +316,5 @@ def modify_files(docs_target_dir: Path, asset_source_dir: Path, asset_target_dir
         md_file.write_text(filedata, encoding='utf-8')
         f_count += 1
 
-    print(f'... done modifying md-pages tree ({f_count} pages)')
+    ux.print(f'... done modifying md-pages tree ({f_count} pages)')
     return assets_dict

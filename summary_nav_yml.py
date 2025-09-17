@@ -6,7 +6,9 @@ from pathlib import Path
 
 import yaml
 
-#TODO: parse function is _very_ long. Can it be shortened?
+import ux
+
+# TODO: parse function is _very_ long. Can it be shortened?
 
 Yml_dict_type = dict[str, list[str | dict[str, str]]]
 
@@ -21,22 +23,16 @@ name_sub_pattern = re.compile(
     r'\[(?P<title>.*)\]\((?P<filename>.*.md)\)')
 
 # Set flags
-flag_tag_print = False
 flag_tag_write = False
-flag_yml_print = False
 flag_include_star = True
 flag_always_use_titles = True
 
 
 def tag_print(text: str, indent: int) -> None:
-    global flag_tag_print
     global flag_tag_write
     global tag_output_file
 
     line = indent * " " + f"<{text}>"
-
-    if flag_tag_print:
-        print(line)
 
     if flag_tag_write and tag_output_file:
         if indent == 0 and not text.startswith("/"):
@@ -221,21 +217,16 @@ def make_nav_yml(base_dir: Path) -> Yml_dict_type:
     summary_full_filename = base_dir / summary_filename
 
     if not summary_full_filename.is_file():
-        print("... SUMMARY.md not found")
+        ux.print("... SUMMARY.md not found")
         return {}
 
     yml_dict: Yml_dict_type = {}
 
-    with summary_full_filename.open("r", encoding="utf-8") as file:
-        lines = file.read().splitlines()
+    lines = summary_full_filename \
+        .read_text(encoding='utf-8') \
+        .splitlines()
 
-        yml_dict = parse(yml_dict, lines, 0, 0)[0]
-
-        if flag_yml_print:
-            for key in yml_dict.keys():
-                print("# " + key)
-                for line in yml_dict[key]:
-                    print("     > " + str(line))
+    yml_dict = parse(yml_dict, lines, 0, 0)[0]
 
     return yml_dict
 
@@ -260,7 +251,7 @@ def create_files(base_dir: Path, yml_dict: Yml_dict_type) -> None:
             with full_filename.open("w", encoding="utf-8") as file:
                 file.write(yml_str)
         except:
-            print(f"Failed to create {full_filename}")
+            ux.print(f"Failed to create {full_filename}")
 
 
 def generate_nav_ymls(base_dir: Path, include_star: bool = True, always_use_titles: bool = False):

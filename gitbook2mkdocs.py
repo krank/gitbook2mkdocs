@@ -1,7 +1,6 @@
 #!/usr/bin/python3
 
 # TODO: Fix it so .hidden files' names are properly changed everywhere
-# TODO: Add argument for silent operation
 
 # Related links:
 # - https://lukasgeiter.github.io/mkdocs-awesome-nav/
@@ -26,6 +25,10 @@ parser.add_argument('--generate-nav', '-n',
                     default=True,
                     choices=(True, False),
                     help='Using SUMMARY.md, generate .nav.yml files for root and all subdirectories. Used by awesome-nav plugin')
+parser.add_argument('--silent', '-s',
+                    action='store_true',
+                    help='Run silently'
+                    )
 
 # Parse args into dict
 args = vars(parser.parse_args())
@@ -36,7 +39,9 @@ args = vars(parser.parse_args())
 # region INITIALIZE ############################################################
 # ------------------------------------------------------------------------------
 
-print("Starting...")
+ux.set_visible(not args['silent'])
+
+ux.print("Starting...")
 
 # Root folders for gitbook (source) and mkdocs (target)
 docs_source_dir = Path(args['source_path'])
@@ -54,11 +59,11 @@ full_asset_targetdir = Path(docs_target_dir, asset_target_dir)
 full_asset_sourcedir = Path(docs_source_dir, asset_source_dir)
 
 
-print("Checking source directory...")
+ux.print("Checking source directory...")
 if docs_source_dir.exists():
-    print(" Source directory exists")
+    ux.print(" Source directory exists")
 else:
-    print(" Source directory doesn't exist, aborting")
+    ux.print(" Source directory doesn't exist, aborting")
     exit()
 
 # endregion --------------------------------------------------------------------
@@ -95,7 +100,7 @@ ux.header('Copy and rename assets...')
 
 fileman.write_assets_json(docs_source_dir, assets_dict)
 
-print(f'\nFound {len(assets_dict)} assets')
+ux.print(f'\nFound {len(assets_dict)} assets')
 
 fileman.copy_assets(assets_dict, full_asset_sourcedir, full_asset_targetdir)
 
@@ -107,4 +112,4 @@ ux.header('Finishing touches...')
 fileman.copy_extra_files(docs_target_dir, extra_source_dir)
 
 
-print("Done!")
+ux.print("Done!")

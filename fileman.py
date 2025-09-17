@@ -5,6 +5,8 @@ import yaml
 import urllib.parse
 from pathlib import Path
 
+import ux
+
 Asset_dict_type = dict[str, str]
 
 
@@ -23,15 +25,15 @@ def copy_files(docs_source_dir: Path, docs_target_dir: Path, full_asset_target_d
     # Delete target dir
     if docs_target_dir.exists():
         shutil.rmtree(docs_target_dir)
-        print(f'... deleted: {docs_target_dir}')
+        ux.print(f'... deleted: {docs_target_dir}')
 
     # Original folders declared here so if destination is a subfolder it's not included
     original_folders = docs_source_dir.glob("*/")
 
     if not full_asset_target_dir.exists():
         full_asset_target_dir.mkdir(parents=True, exist_ok=True)
-        print(f'... created: {docs_target_dir}, {full_asset_target_dir}')
-        print('== Copying files and folders ==')
+        ux.print(f'... created: {docs_target_dir}, {full_asset_target_dir}')
+        ux.print('== Copying files and folders ==')
 
         # Copy all folders to docs/
         for folder in original_folders:
@@ -40,9 +42,9 @@ def copy_files(docs_source_dir: Path, docs_target_dir: Path, full_asset_target_d
             # Ignore .git folder
             if (folder.name.startswith('.')):
                 continue
-            print(f' Ignoring {folder}')
+            ux.print(f' Ignoring {folder}')
 
-            print(f' Copy {folder}')
+            ux.print(f' Copy {folder}')
             shutil.copytree(
                 docs_source_dir / folder,
                 docs_target_dir / folder
@@ -67,24 +69,24 @@ def copy_files(docs_source_dir: Path, docs_target_dir: Path, full_asset_target_d
                 target_file
             )
 
-        print('... done copying md-pages tree')
+        ux.print('... done copying md-pages tree')
     else:
-        print("... please delete docs/")
-        print("Aborting!")
+        ux.print("... please delete docs/")
+        ux.print("Aborting!")
         exit()
 
 
 def copy_assets(assets_dict: Asset_dict_type, full_asset_sourcedir: Path, full_asset_targetdir: Path):
 
     # Copy and rename assets used in md-pages
-    print("\nStarting renaming and copying assets ...")
+    ux.print("\nStarting renaming and copying assets ...")
 
     if full_asset_sourcedir.exists():
         for original_name, new_name in assets_dict.items():
             # First decode html-entities
             original_name = urllib.parse.unquote(original_name)
 
-            print(f' {original_name} >> {new_name}')
+            ux.print(f' {original_name} >> {new_name}')
 
         # Prep new full names including paths
             full_original_name = full_asset_sourcedir / original_name
@@ -94,11 +96,11 @@ def copy_assets(assets_dict: Asset_dict_type, full_asset_sourcedir: Path, full_a
             if full_original_name.exists():
                 shutil.copy(str(full_original_name), str(full_new_name))
             else:
-                print(f' ... missing: {full_original_name}')
+                ux.print(f' ... missing: {full_original_name}')
 
-        print('... all assets renamed and copied')
+        ux.print('... all assets renamed and copied')
     else:
-        print(f'... could not copy assets to {full_asset_targetdir}')
+        ux.print(f'... could not copy assets to {full_asset_targetdir}')
 
 
 def write_assets_json(docs_source_dir: Path, assets_dict: Asset_dict_type):
@@ -107,16 +109,16 @@ def write_assets_json(docs_source_dir: Path, assets_dict: Asset_dict_type):
 
     with asset_file.open('w', encoding='utf-8') as file:
         json.dump(assets_dict, file, indent=4, ensure_ascii=False)
-        print("\nWriting assets.json")
+        ux.print("\nWriting assets.json")
 
 
 def copy_extra_files(docs_target_dir: Path, extra_source_dir: Path):
     if extra_source_dir.exists():
-        print('Copying extra files')
+        ux.print('Copying extra files')
         for source_file in extra_source_dir.glob('**/*.*'):
             target_file: Path = docs_target_dir / \
                 source_file.relative_to(extra_source_dir)
-            print(f' {source_file} >> {target_file}')
+            ux.print(f' {source_file} >> {target_file}')
 
             target_file.parent.mkdir(parents=True, exist_ok=True)
 
@@ -124,7 +126,7 @@ def copy_extra_files(docs_target_dir: Path, extra_source_dir: Path):
                 source_file,
                 target_file
             )
-        print("...copied extra files")
+        ux.print("...copied extra files")
     else:
-        print(
+        ux.print(
             f'\'Extra\' file directory "{extra_source_dir}" not found, skipping...')
