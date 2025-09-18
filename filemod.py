@@ -48,12 +48,12 @@ def hint_handler(match: re.Match[str]) -> str:
 # ### warning
 #     some text
 gb_tab_pattern = re.compile(
-    r'{% tab title=\"(?P<title>.*)\" %}(?P<content>.*|[\s\S]+?){% endtab %}')
+    r'{% tab title=\"(?P<title>.*)\" %}(?P<content>[\s\S]*?){% endtab %}')
 
 
 def tab_handler(match: re.Match[str]) -> str:
     tab_title = match.group("title")
-    tab_content = str(match.group("content")).replace("\n", "\n\t")
+    tab_content = str(match.group("content")).replace("\n", "\n    ")
 
     return f'=== "{tab_title}"\n{tab_content}'
 
