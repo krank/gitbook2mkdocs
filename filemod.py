@@ -19,6 +19,7 @@ code_block_dict: dict[str, str] = {}
 # region Declare regexp patterns & result handlers #############################
 ################################################################################
 
+
 # replace gitbook hint and file extensions to mkdocs-compatible format. e.g.
 # --------- replace ---------
 # {% hint style="warning" %}
@@ -111,7 +112,8 @@ def code_handler(match: re.Match[str]) -> str:
     return f"``` {code_language}{code_title}{code_lineNumbers}\n{code_actual_code}```"
 
 
-gb_codeblock_pattern = re.compile(r'```(?P<content>[\S\s]*?)```')
+gb_codeblock_pattern = re.compile(
+    r'(?P<indent> *?)```(?P<content>[\S\s]*?)```')
 
 
 def code_block_to_uuid(match: re.Match[str]) -> str:
@@ -124,12 +126,15 @@ def code_block_to_uuid(match: re.Match[str]) -> str:
 
 def code_uuid_to_block(match: re.Match[str]) -> str:
     block_uuid = str(match.group('content'))
+    block_indent = str(match.group('indent'))
     if block_uuid in code_block_dict:
         block_content = code_block_dict[block_uuid]
     else:
         block_content = block_uuid
 
-    return f'```{block_content}```'
+    # Take the opportunity to match indent of all lines
+    return indent(f'```{block_content}```', block_indent)
+
 
 # replace images & figures with mkdocs-compatible format. e.g.
 # --------- replace ---------
@@ -245,10 +250,8 @@ def link_handler(match: re.Match[str]):
 # ##############################################################################
 
 
-def make_replacements(filedata: str, assets_dict: Asset_dict_type, asset_source_dir: Path, asset_target_dir: Path) -> tuple[str, dict[str, str]]:
+def make_replacements(filedata: str, asset_source_dir: Path, asset_target_dir: Path) -> str:
     global local_assets_dict
-    global local_assets_dict
-    local_assets_dict = assets_dict
 
     # Reset dict of uuids and code block contents
     global code_block_dict
@@ -294,13 +297,12 @@ def make_replacements(filedata: str, assets_dict: Asset_dict_type, asset_source_
     # https://www.markdownguide.org/basic-syntax/#line-break-best-practices
     filedata = filedata.replace('\\\n', '  \n')
 
-    return filedata, local_assets_dict
+    return filedata
 
 
-def modify_files(docs_target_dir: Path, asset_source_dir: Path, asset_target_dir: Path):
+def modify_files(docs_target_dir: Path, asset_source_dir: Path, asset_target_dir: Path) -> Asset_dict_type:
 
-    # Dictionary to collect assets
-    assets_dict = {}
+    local_assets_dict.clear()
 
     ux.print(f'\nStarting to modify md-pages in {docs_target_dir} ...')
 
@@ -310,11 +312,11 @@ def modify_files(docs_target_dir: Path, asset_source_dir: Path, asset_target_dir
         ux.print(f'parsing: {md_file}')
         filedata = md_file.read_text(encoding='utf-8')
 
-        filedata, assets_dict = make_replacements(
-            filedata, assets_dict, asset_source_dir, asset_target_dir)
+        filedata = make_replacements(
+            filedata, asset_source_dir, asset_target_dir)
 
         md_file.write_text(filedata, encoding='utf-8')
         f_count += 1
 
     ux.print(f'... done modifying md-pages tree ({f_count} pages)')
-    return assets_dict
+    return local_assets_dict

@@ -1,6 +1,20 @@
 #!/usr/bin/python3
 
 # TODO: Fix it so .hidden files' names are properly changed everywhere
+# FIXME: Something goes wrong in "reference vs value types" (strip out <div> tags)
+# FIXME: Code in tabs (Unify indentation & make sure of 4 spaces)
+#   serialisering
+#   json-serialisering
+#   xml-serialisering
+#   restful server controllers
+#   restful server models/dataklasser
+#   länkade listor
+# FIXME: indents in quotes (pseudokod och diagram) (replace spaces after > with &nbsp;&nbsp;)
+# FIXME: Something wrong in XAML (escape < and > in headings)
+# FIXME: VSCode inställningar: &#xNAN
+
+# TODO: Compare smaller headings; maybe make less fat / smaller?
+# TODO: Maybe add some padding at the bottom of pages?
 
 # Related links:
 # - https://lukasgeiter.github.io/mkdocs-awesome-nav/
