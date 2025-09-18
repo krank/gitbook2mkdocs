@@ -143,8 +143,7 @@ def code_uuid_to_block(match: re.Match[str]) -> str:
 # <figure><img src="../.gitbook/assets/Image.png" alt="Some text"><figcaption><p>Description</p></figcaption></figure>
 # ---------- with -----------
 # ![Some text](../images/image-12.png)
-
-
+#
 # ![Some text](../images/image-13.png)
 # /// caption
 # Description
@@ -157,7 +156,7 @@ gb_img_pattern = re.compile(
 
 
 def image_handler(match: re.Match[str]) -> str:
-
+    global local_assets_dict
     img_filename = Path(
         str(match.group("filename"))
         .rstrip('>')
@@ -220,6 +219,14 @@ gb_mark_pattern = re.compile(
 def strip_handler(match: re.Match[str]):
     return match.group("content")
 
+# Make sure (local) links to folders go to README.md's, and fix anchors
+# --------- replace ---------
+#   [text][link_folder/]
+#   [test][./#heading]
+# ---------- with -----------
+#   [text][link_folder/README.md]
+#   [test][#heading]
+
 
 gb_link_pattern = re.compile(r'\[(?P<text>.*?)\]\((?P<url>.*?)\)')
 
@@ -243,6 +250,19 @@ def link_handler(match: re.Match[str]):
         link_url = link_url[2:]
 
     return f'[{link_text}]({link_url})'
+
+
+# Make sure tags are properly escaped
+# --------- replace ---------
+# \<h1>Heading\</h1>
+# ---------- with -----------
+# <h1\>Heading</h1\>
+gb_tag_pattern = re.compile(r'\\<(?P<tagname>.*?)>')
+
+
+def tag_handler(match: re.Match[str]):
+    tag_name = str(match.group('tagname'))
+    return f'<{tag_name}\\>'
 
 # endregion ####################################################################
 # ===============================================================================
@@ -269,8 +289,8 @@ def make_replacements(filedata: str, asset_source_dir: Path, asset_target_dir: P
     filedata = gb_embed_yt_pattern.sub(embed_yt_handler, filedata)
     filedata = gb_embed_pattern.sub(embed_handler, filedata)
     filedata = gb_link_pattern.sub(link_handler, filedata)
-
     filedata = gb_mark_pattern.sub(strip_handler, filedata)
+    filedata = gb_tag_pattern.sub(tag_handler, filedata)
 
     # Images, figures and files
     filedata = filedata.replace(
@@ -280,6 +300,8 @@ def make_replacements(filedata: str, asset_source_dir: Path, asset_target_dir: P
     filedata = gb_figure_pattern.sub(image_handler, filedata)
     filedata = gb_img_pattern.sub(image_handler, filedata)
     filedata = gb_file_pattern.sub(file_handler, filedata)
+
+    # https://github.com/mkdocs/mkdocs/issues/3563
 
     # Replace uuids within code blocks with their contents
     filedata = gb_codeblock_pattern.sub(code_uuid_to_block, filedata)
