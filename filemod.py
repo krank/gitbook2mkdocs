@@ -311,7 +311,9 @@ def make_replacements(filedata: str, asset_source_dir: Path, asset_target_dir: P
         '{% tabs %}\n',
         '{% endtabs %}\n',
         '{% endembed %}\n',
-        '&#x20;'
+        '&#x20;',
+        '<div>',
+        '</div>'
     ]
     for rem in removals:
         filedata = filedata.replace(rem, '')

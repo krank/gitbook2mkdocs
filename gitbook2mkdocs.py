@@ -1,7 +1,6 @@
 #!/usr/bin/python3
 
 # TODO: Fix it so .hidden files' names are properly changed everywhere
-# FIXME: Something goes wrong in "reference vs value types" (strip out <div> tags)
 # FIXME: indents in quotes (pseudokod och diagram) (replace spaces after > with &nbsp;&nbsp;)
 
 # TODO: Compare smaller headings; maybe make less fat / smaller?
