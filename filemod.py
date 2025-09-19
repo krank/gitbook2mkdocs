@@ -6,10 +6,6 @@ import uuid
 
 import ux
 
-# TODO: Anchors with ä (ae), ö (oe), or using . (removed in mkdocs)
-#   grundlaeggande/konsollen-console.md#console.writeline ->consolewriteline
-
-
 # Local globals
 local_assets_dict: Asset_dict_type = {}
 
@@ -228,26 +224,32 @@ def strip_handler(match: re.Match[str]):
 #   [test][#heading]
 
 
-gb_link_pattern = re.compile(r'\[(?P<text>.*?)\]\((?P<url>.*?)\)')
+# gb_link_pattern = re.compile(r'\[(?P<text>.*?)\]\((?P<url>.*?)\)')
+
+gb_link_pattern = re.compile(
+    r'\[(?P<text>.*?)\]\((?P<url>(?P<path>(?<=\().*?)(?P<filename>[^/\n\(]*?)?(?P<anchor>#.+?(?=\)))?\))')
 
 
 def link_handler(match: re.Match[str]):
     link_text = str(match.group('text'))
     link_url = str(match.group('url'))
 
-    # Detect urls leading to local folders, add a README.md
-    if not link_url.startswith('http'):
-        if link_url.endswith('/'):
-            link_url += 'README.md'
-        else:
-            parts = link_url.rsplit('/', 1)
-            if len(parts) >= 2 and parts[1].startswith('#'):
-                parts[1] = 'README.md' + parts[1]
-                link_url = '/'.join(parts)
+    link_path = str(match.group('path')) if match.group('path') else ''
+    link_filename = str(match.group('filename')
+                        ) if match.group('filename') else ''
+    link_anchor = str(match.group('anchor')) if match.group('anchor') else ''
 
-    # Strip ./ from local anchors
-    if link_url.startswith('./#'):
-        link_url = link_url[2:]
+    # Detect urls leading to local folders
+    if not link_path.startswith('http'):
+
+        # Add README to folder links
+        if link_filename == '':
+            link_filename = 'README.md'
+
+        # Remove periods from anchors
+        link_anchor = link_anchor.replace('.', '')
+
+    link_url = link_path + link_filename + link_anchor
 
     return f'[{link_text}]({link_url})'
 
@@ -263,6 +265,24 @@ gb_tag_pattern = re.compile(r'\\<(?P<tagname>.*?)>')
 def tag_handler(match: re.Match[str]):
     tag_name = str(match.group('tagname'))
     return f'<{tag_name}\\>'
+
+
+# Make sure indents in quotes are properly indented using spaces
+# --------- replace ---------
+# >     tal = slump()
+# ---------- with -----------
+# > &nbsp;&nbsp;&nbsp;&nbsp;tal = slump()
+gb_quote_pattern = re.compile(r'> (?P<indent> *)(?P<content>.+)')
+
+
+def quote_handler(match: re.Match[str]):
+    quote_indent = str(match.group('indent'))
+    quote_content = str(match.group('content'))
+
+    quote_indent = '&nbsp;' * len(quote_indent)
+
+    return f'> {quote_indent}{quote_content}'
+
 
 # endregion ####################################################################
 # ===============================================================================
@@ -283,6 +303,9 @@ def make_replacements(filedata: str, asset_source_dir: Path, asset_target_dir: P
     # Replace all code blocks' contents with uuids
     filedata = gb_codeblock_pattern.sub(code_block_to_uuid, filedata)
 
+    # Symbol replacements
+    filedata = filedata.replace('&#x20;', ' ')
+
     # hints/admonishments, tabs, embeds
     filedata = gb_hint_pattern.sub(hint_handler, filedata)
     filedata = gb_tab_pattern.sub(tab_handler, filedata)
@@ -290,7 +313,12 @@ def make_replacements(filedata: str, asset_source_dir: Path, asset_target_dir: P
     filedata = gb_embed_pattern.sub(embed_handler, filedata)
     filedata = gb_link_pattern.sub(link_handler, filedata)
     filedata = gb_mark_pattern.sub(strip_handler, filedata)
+
+    # https://github.com/mkdocs/mkdocs/issues/3563
     filedata = gb_tag_pattern.sub(tag_handler, filedata)
+
+    # Quotes
+    filedata = gb_quote_pattern.sub(quote_handler, filedata)
 
     # Images, figures and files
     filedata = filedata.replace(
@@ -301,8 +329,6 @@ def make_replacements(filedata: str, asset_source_dir: Path, asset_target_dir: P
     filedata = gb_img_pattern.sub(image_handler, filedata)
     filedata = gb_file_pattern.sub(file_handler, filedata)
 
-    # https://github.com/mkdocs/mkdocs/issues/3563
-
     # Replace uuids within code blocks with their contents
     filedata = gb_codeblock_pattern.sub(code_uuid_to_block, filedata)
 
@@ -311,7 +337,6 @@ def make_replacements(filedata: str, asset_source_dir: Path, asset_target_dir: P
         '{% tabs %}\n',
         '{% endtabs %}\n',
         '{% endembed %}\n',
-        '&#x20;',
         '<div>',
         '</div>'
     ]
@@ -333,6 +358,9 @@ def modify_files(docs_target_dir: Path, asset_source_dir: Path, asset_target_dir
     f_count = 0
 
     for md_file in docs_target_dir.glob('**/*.md'):
+        # Skip summary file
+        if md_file.name == 'SUMMARY.md':
+            continue
         ux.print(f'parsing: {md_file}')
         filedata = md_file.read_text(encoding='utf-8')
 

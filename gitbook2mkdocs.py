@@ -1,10 +1,6 @@
 #!/usr/bin/python3
 
 # TODO: Fix it so .hidden files' names are properly changed everywhere
-# FIXME: indents in quotes (pseudokod och diagram) (replace spaces after > with &nbsp;&nbsp;)
-
-# TODO: Compare smaller headings; maybe make less fat / smaller?
-# TODO: Maybe add some padding at the bottom of pages?
 
 # Related links:
 # - https://lukasgeiter.github.io/mkdocs-awesome-nav/
