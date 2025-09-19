@@ -264,6 +264,11 @@ gb_tag_pattern = re.compile(r'\\<(?P<tagname>.*?)>')
 
 def tag_handler(match: re.Match[str]):
     tag_name = str(match.group('tagname'))
+    whitelist_tags = ['br', 'p']
+    
+    if tag_name in whitelist_tags:
+        return match.string
+    
     return f'<{tag_name}\\>'
 
 
@@ -291,6 +296,7 @@ def quote_handler(match: re.Match[str]):
 
 
 def make_replacements(filedata: str, asset_source_dir: Path, asset_target_dir: Path) -> str:
+    
     global local_assets_dict
 
     # Reset dict of uuids and code block contents

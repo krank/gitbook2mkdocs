@@ -1,7 +1,5 @@
 #!/usr/bin/python3
 
-# TODO: Fix it so .hidden files' names are properly changed everywhere
-
 # Related links:
 # - https://lukasgeiter.github.io/mkdocs-awesome-nav/
 

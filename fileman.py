@@ -34,7 +34,6 @@ def copy_files(docs_source_dir: Path, docs_target_dir: Path, full_asset_target_d
         full_asset_target_dir.mkdir(parents=True, exist_ok=True)
         ux.print(f'... created: {docs_target_dir}, {full_asset_target_dir}')
         ux.print('== Copying files and folders ==')
-
         # Copy all folders to docs/
         for folder in original_folders:
             folder = folder.relative_to(docs_source_dir)
@@ -73,6 +72,7 @@ def copy_files(docs_source_dir: Path, docs_target_dir: Path, full_asset_target_d
     else:
         ux.print("... please delete docs/")
         ux.print("Aborting!")
+
         exit()
 
 
