@@ -1,4 +1,4 @@
-from ._remodule import *
+from .._remodule import *
 
 # Make sure (local) links to folders go to README.md's, and fix anchors
 # --------- replace ---------

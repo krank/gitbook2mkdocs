@@ -1,4 +1,4 @@
-from ._remodule import *
+from .._remodule import *
 
 # remove unnecessary <mark> tags around inline `code`
 # --------- replace ---------

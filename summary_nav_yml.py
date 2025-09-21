@@ -8,11 +8,8 @@ import yaml
 
 import ux
 
-# TODO: parse function is _very_ long. Can it be shortened?
-
 Yml_dict_type = dict[str, list[str | dict[str, str]]]
 
-# base_dir = '_csharp_ref_old'
 nav_filename = Path('.nav.yml')
 summary_filename = Path('SUMMARY.md')
 tag_output_file = Path("tags.xml")

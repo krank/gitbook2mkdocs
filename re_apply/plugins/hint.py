@@ -1,4 +1,4 @@
-from ._remodule import *
+from .._remodule import *
 from textwrap import indent
 
 # replace gitbook hint and file extensions to mkdocs-compatible format. e.g.

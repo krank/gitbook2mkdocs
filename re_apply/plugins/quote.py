@@ -1,4 +1,4 @@
-from ._remodule import *
+from .._remodule import *
 
 # Make sure indents in quotes are properly indented using spaces
 # --------- replace ---------

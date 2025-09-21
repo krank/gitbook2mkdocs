@@ -1,4 +1,4 @@
-from ._remodule import *
+from .._remodule import *
 
 # replace gitbook youtube embed to mkdocs-compatible format. e.g.
 # --------- replace ---------

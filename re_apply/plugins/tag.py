@@ -1,4 +1,4 @@
-from ._remodule import *
+from .._remodule import *
 
 # Make sure tags are properly escaped
 # --------- replace ---------
