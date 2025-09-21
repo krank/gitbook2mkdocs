@@ -11,6 +11,7 @@ import summary_nav_yml
 import fileman
 import ux
 
+
 # region HANDLE ARGUMENTS ######################################################
 # ------------------------------------------------------------------------------
 
@@ -90,7 +91,6 @@ if args['generate_nav']:
     summary_nav_yml.generate_nav_ymls(docs_target_dir,
                                       include_star=True,
                                       always_use_titles=False)
-
 
 # COPY AND RENAME ASSETS -------------------------------------------------------
 

@@ -250,8 +250,9 @@ def create_files(base_dir: Path, yml_dict: Yml_dict_type) -> None:
         try:
             with full_filename.open("w", encoding="utf-8") as file:
                 file.write(yml_str)
+            ux.print(f' Created {full_filename}')
         except:
-            ux.print(f"Failed to create {full_filename}")
+            ux.print(f' Failed to create {full_filename}')
 
 
 def generate_nav_ymls(base_dir: Path, include_star: bool = True, always_use_titles: bool = False):
@@ -263,3 +264,4 @@ def generate_nav_ymls(base_dir: Path, include_star: bool = True, always_use_titl
 
     yml_dict = make_nav_yml(base_dir)
     create_files(base_dir, yml_dict)
+    ux.print(f'... {len(yml_dict)} nav yml files created')
