@@ -27,35 +27,23 @@ def copy_files(docs_source_dir: Path, docs_target_dir: Path, full_asset_target_d
         shutil.rmtree(docs_target_dir)
         ux.print(f'... deleted: {docs_target_dir}')
 
-    # Original folders declared here so if destination is a subfolder it's not included
-    original_folders = docs_source_dir.glob("*/")
-
-    if not full_asset_target_dir.exists():
-        full_asset_target_dir.mkdir(parents=True, exist_ok=True)
-        ux.print(f'... created: {docs_target_dir}, {full_asset_target_dir}')
+    if not docs_target_dir.exists():
         ux.print('== Copying files and folders ==')
-        # Copy all folders to docs/
-        for folder in original_folders:
-            folder = folder.relative_to(docs_source_dir)
 
-            # Ignore .git folder
-            if (folder.name.startswith('.')):
-                continue
-            ux.print(f' Ignoring {folder}')
+        for md_file in docs_source_dir.glob('**/*.md'):
 
-            ux.print(f' Copy {folder}')
-            shutil.copytree(
-                docs_source_dir / folder,
-                docs_target_dir / folder
-            )
-
-        # Copy md-pages tree to docs/
-
-        for md_file in docs_source_dir.glob("*.md"):
             md_file = md_file.relative_to(docs_source_dir)
 
+            # Make relative
             source_file = docs_source_dir / md_file
-            target_file: Path = docs_target_dir / md_file
+            target_file = docs_target_dir / md_file
+
+            # Ignore files in folders starting with .
+            if (str(md_file).startswith('.')):
+                continue
+
+            # Create directory if it doesn't exist
+            target_file.parent.mkdir(parents=True, exist_ok=True)
 
             frontmatter = read_frontmatter(source_file)
 
@@ -67,16 +55,20 @@ def copy_files(docs_source_dir: Path, docs_target_dir: Path, full_asset_target_d
                 source_file,
                 target_file
             )
+            ux.print(f' {source_file} >> {target_file}')
 
         ux.print('... done copying md-pages tree')
     else:
-        ux.print("... please delete docs/")
-        ux.print("Aborting!")
+        ux.print(f'... please delete {full_asset_target_dir}')
+        ux.print('Aborting!')
 
         exit()
 
 
 def copy_assets(assets_dict: Asset_dict_type, full_asset_sourcedir: Path, full_asset_targetdir: Path):
+
+    ux.print(f'Creating asset directory {full_asset_targetdir}')
+    full_asset_targetdir.mkdir(parents=True, exist_ok=True)
 
     # Copy and rename assets used in md-pages
     ux.print("\nStarting renaming and copying assets ...")
