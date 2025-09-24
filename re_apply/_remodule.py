@@ -1,12 +1,15 @@
 import re
 
+
 class ReModule:
     name = '_default'
-    pattern:re.Pattern[str] = re.compile('')
+    pattern: re.Pattern[str] = re.compile('')
 
-    def apply(self, filedata:str) -> str:
+    def __init__(self):
+        self.local_dict: dict[str, object] = {}
+
+    def apply(self, filedata: str) -> str:
         return self.pattern.sub(self.handler, filedata)
-    
-    @staticmethod
-    def handler(match:re.Match[str]) -> str:
-        return match.string
+
+    def handler(self, match: re.Match[str]) -> str:
+        return match[0]

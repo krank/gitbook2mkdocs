@@ -10,8 +10,7 @@ class Plugin (ReModule):
     name = 'tag'
     pattern:re.Pattern[str] = re.compile(r'\\<(?P<tagname>.*?)>')
         
-    @staticmethod
-    def handler(match:re.Match[str]) -> str:
+    def handler(self, match:re.Match[str]) -> str:
         tag_name = str(match.group('tagname'))
         whitelist_tags = ['br', 'p']
         

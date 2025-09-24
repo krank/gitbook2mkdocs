@@ -12,8 +12,7 @@ class Plugin (ReModule):
     pattern: re.Pattern[str] = re.compile(
         r'{% embed url=\"https://w*\.*youtu.*/(?P<video_id>.*)\" %}')
 
-    @staticmethod
-    def handler(match: re.Match[str]) -> str:
+    def handler(self, match: re.Match[str]) -> str:
         video_id = match.group("video_id")
         return '<iframe width="560" height="315" ' \
             + f'src="https://www.youtube.com/embed/{video_id}" ' \

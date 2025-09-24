@@ -12,8 +12,7 @@ class Plugin (ReModule):
     pattern: re.Pattern[str] = re.compile(
         r'{% embed url=\"(?P<url>.*)\" %}')
 
-    @staticmethod
-    def handler(match: re.Match[str]) -> str:
+    def handler(self, match: re.Match[str]) -> str:
         embed_url = match.group("url")
         return '<div class="embed"><i class="fas fa-link"></i>' \
             + f'<a href="{embed_url}">{embed_url}</a>'\

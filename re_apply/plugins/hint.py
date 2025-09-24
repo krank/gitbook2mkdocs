@@ -16,8 +16,7 @@ class Plugin (ReModule):
     pattern: re.Pattern[str] = re.compile(
         r'{% hint style=\"(?P<style>.*)\" %}\n?(?P<content>.*|[\s\S]+?)\n?{% endhint %}')
 
-    @staticmethod
-    def handler(match: re.Match[str]) -> str:
+    def handler(self, match: re.Match[str]) -> str:
         hint_style = match.group("style")
         hint_content = indent(str(match.group("content")), '    ')
 

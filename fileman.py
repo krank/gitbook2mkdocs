@@ -90,7 +90,7 @@ def copy_assets(assets_dict: Asset_dict_type, full_asset_sourcedir: Path, full_a
             else:
                 ux.print(f' ... missing: {full_original_name}')
 
-        ux.print('... all assets renamed and copied')
+        ux.print(f'... all {len(assets_dict)} assets renamed and copied')
     else:
         ux.print(f'... could not copy assets to {full_asset_targetdir}')
 

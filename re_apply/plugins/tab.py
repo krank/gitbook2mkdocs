@@ -15,8 +15,7 @@ class Plugin (ReModule):
     pattern: re.Pattern[str] = re.compile(
         r'{% tab title=\"(?P<title>.*)\" %}(?P<content>[\s\S]*?){% endtab %}')
 
-    @staticmethod
-    def handler(match: re.Match[str]) -> str:
+    def handler(self, match: re.Match[str]) -> str:
         tab_title = match.group("title")
         tab_content = str(match.group("content")).replace("\n", "\n    ")
 

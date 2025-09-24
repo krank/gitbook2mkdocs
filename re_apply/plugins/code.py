@@ -16,8 +16,7 @@ class Plugin (ReModule):
     name = 'code'
     pattern:re.Pattern[str] = re.compile(r'{% code ?(?:title=\"(?P<title>.*?)\" )?(?:lineNumbers=\"?(?P<linenums>.*?)\" )?%}\n```(?P<language>.*?)?\n(?P<code>.*|[\s\S]+?)```\n{% endcode %}')
         
-    @staticmethod
-    def handler(match:re.Match[str]) -> str:
+    def handler(self, match:re.Match[str]) -> str:
         code_title = f" title=\"{match.group('title')}\"" if match.group(
             'title') else ""
         code_lineNumbers = " linenums=\"1\"" if match.group(

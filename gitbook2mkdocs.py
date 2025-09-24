@@ -3,8 +3,8 @@
 # Related links:
 # - https://lukasgeiter.github.io/mkdocs-awesome-nav/
 
-# TODO: Can asset managing regexes also be moved to plugin system?
 # TODO: Proper instructions in README
+# FIXME: Links to hidden files need to be recognized
 
 from pathlib import Path
 from argparse import ArgumentParser

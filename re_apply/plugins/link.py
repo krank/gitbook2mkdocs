@@ -13,8 +13,7 @@ class Plugin (ReModule):
     name = 'link'
     pattern = re.compile(r'\[(?P<text>.*?)\]\((?P<url>(?P<path>(?<=\().*?)(?P<filename>[^/\n\(]*?)?(?P<anchor>#.+?(?=\)))?\))')
 
-    @staticmethod
-    def handler(match: re.Match[str]) -> str:
+    def handler(self, match: re.Match[str]) -> str:
         link_text = str(match.group('text'))
         link_url = str(match.group('url'))
 
