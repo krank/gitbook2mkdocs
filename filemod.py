@@ -47,6 +47,9 @@ def code_uuid_to_block(match: re.Match[str]) -> str:
 # ##############################################################################
 
 
+gb_removals = re.compile(r'{% tabs %}|{% endtabs %}|{% endembed %}|<\/?div>')
+
+
 def make_replacements(filedata: str, asset_source_dir: Path, asset_target_dir: Path) -> str:
 
     global local_assets_dict

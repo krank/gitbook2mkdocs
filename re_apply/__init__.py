@@ -18,6 +18,7 @@ plugins_to_use: list[str] = ['tag',
                              'quote',
                              'images',
                              'file',
+                             'listitem',
                              ]
 
 loaded_plugins: dict[str, _remodule.ReModule] = {}

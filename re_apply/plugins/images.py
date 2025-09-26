@@ -57,5 +57,5 @@ class Plugin (ReModule):
         else:
             raise Exception("Images module doesn't have the assets dict")
 
-        return f'![{img_alt}]({img_filename.parent.as_posix()}/{img_filename})\n' \
+        return f'![{img_alt}]({img_filename.parent.as_posix()}/{img_new_filename})\n' \
             + (f'/// caption\n{img_caption}\n///\n' if img_caption != "" else '')
