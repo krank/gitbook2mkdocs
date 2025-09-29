@@ -14,7 +14,7 @@ from .._remodule import *
 
 class Plugin (ReModule):
     name = 'code'
-    pattern:re.Pattern[str] = re.compile(r'{% code ?(?:title=\"(?P<title>.*?)\" )?(?:lineNumbers=\"?(?P<linenums>.*?)\" )?%}\n```(?P<language>.*?)?\n(?P<code>.*|[\s\S]+?)```\n{% endcode %}')
+    pattern = [re.compile(r'{% code ?(?:title=\"(?P<title>.*?)\" )?(?:lineNumbers=\"?(?P<linenums>.*?)\" )?%}\n```(?P<language>.*?)?\n(?P<code>.*|[\s\S]+?)```\n{% endcode %}')]
         
     def handler(self, match:re.Match[str]) -> str:
         code_title = f" title=\"{match.group('title')}\"" if match.group(

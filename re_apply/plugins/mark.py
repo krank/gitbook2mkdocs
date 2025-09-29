@@ -9,7 +9,7 @@ from .._remodule import *
 
 class Plugin (ReModule):
     name = 'mark'
-    pattern = re.compile(r'<mark.*?>(?P<content>`.*?`)</mark>')
+    pattern = [re.compile(r'<mark.*?>(?P<content>`.*?`)</mark>')]
 
     def handler(self, match: re.Match[str]) -> str:
         return match.group('content')

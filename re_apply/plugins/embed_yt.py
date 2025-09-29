@@ -9,8 +9,8 @@ from .._remodule import *
 
 class Plugin (ReModule):
     name = 'embed_yt'
-    pattern: re.Pattern[str] = re.compile(
-        r'{% embed url=\"https://w*\.*youtu.*/(?P<video_id>.*)\" %}')
+    pattern = [re.compile(
+        r'{% embed url=\"https://w*\.*youtu.*/(?P<video_id>.*)\" %}')]
 
     def handler(self, match: re.Match[str]) -> str:
         video_id = match.group("video_id")

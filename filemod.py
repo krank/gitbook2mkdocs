@@ -94,6 +94,7 @@ def modify_files(docs_target_dir: Path, asset_source_dir: Path, asset_target_dir
     re_apply.set_local('images', 'assets', local_assets_dict)
     re_apply.set_local('file', 'assets', local_assets_dict)
 
+
     f_count = 0
 
     for md_file in docs_target_dir.glob('**/*.md'):
@@ -101,6 +102,8 @@ def modify_files(docs_target_dir: Path, asset_source_dir: Path, asset_target_dir
         if md_file.name == 'SUMMARY.md':
             continue
         ux.print(f' parsing: {md_file}')
+        re_apply.set_local('link', 'file', md_file)
+            
         filedata = md_file.read_text(encoding='utf-8')
 
         filedata = make_replacements(

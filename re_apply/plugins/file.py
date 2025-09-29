@@ -16,8 +16,8 @@ from .._remodule import *
 
 class Plugin (ReModule):
     name = 'file'
-    pattern = re.compile(
-        r'{% file src=\"(?P<filename>.*)\" %}(?:\n(?P<caption>.*?)\n{% endfile %})?')
+    pattern = [re.compile(
+        r'{% file src=\"(?P<filename>.*)\" %}(?:\n(?P<caption>.*?)\n{% endfile %})?')]
 
     def handler(self, match: re.Match[str]) -> str:
         file_filename = Path(match.group("filename"))

@@ -16,22 +16,25 @@ from .._remodule import *
 
 class Plugin (ReModule):
     name = 'code'
-    img_pattern = re.compile(
-        r'<img src=\"(?P<filename>.*?)\" alt=\"(?P<alt>.*?)\".*?>')
-    image_pattern = re.compile(r'\!\[(?P<alt>.*)\]\(<?(?P<filename>.*)\)')
-    figure_pattern = re.compile(
-        r'<figure>\s*?<img src=\"(?:<?)(?P<filename>.*?)(?:>?)\" alt=\"(?P<alt>.*?)\">\s*?(?:<figcaption>(?P<caption>[\S\s]*?)</figcaption>)?\s*?</figure>')
 
-    def apply(self, filedata: str) -> str:
-        filedata = self.image_pattern.sub(self.handler, filedata)
-        filedata = self.figure_pattern.sub(self.handler, filedata)
-        filedata = self.img_pattern.sub(self.handler, filedata)
-        return filedata
+    # Order is important here!
+    pattern = [
+        # Markdown images ![]()
+        re.compile(r'\!\[(?P<alt>.*)\]\((?P<filename>[^<].*[^>])\)'),
+        re.compile(r'\!\[(?P<alt>.*)\]\(<(?P<filename>.*)>\)'),
+        
+        # figures <figure><img><figcaption></figcaption></figure>
+        re.compile(
+            r'<figure>\s*?<img src=\"(?:<?)(?P<filename>.*?)(?:>?)\" alt=\"(?P<alt>.*?)\">\s*?(?:<figcaption>(?P<caption>[\S\s]*?)</figcaption>)?\s*?</figure>'),
+        
+        # pure img-tags
+        re.compile(
+            r'<img src=\"(?P<filename>.*?)\" alt=\"(?P<alt>.*?)\".*?>'),
+    ]
 
     def handler(self, match: re.Match[str]) -> str:
         img_filename = Path(
             str(match.group("filename"))
-            .rstrip('>')
         )
 
         img_alt = match.group("alt")

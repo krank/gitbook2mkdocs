@@ -13,8 +13,8 @@ from textwrap import indent
 
 class Plugin (ReModule):
     name = 'hint'
-    pattern: re.Pattern[str] = re.compile(
-        r'{% hint style=\"(?P<style>.*)\" %}\n?(?P<content>.*|[\s\S]+?)\n?{% endhint %}')
+    pattern = [re.compile(
+        r'{% hint style=\"(?P<style>.*)\" %}\n?(?P<content>.*|[\s\S]+?)\n?{% endhint %}')]
 
     def handler(self, match: re.Match[str]) -> str:
         hint_style = match.group("style")

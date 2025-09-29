@@ -10,7 +10,7 @@ from .._remodule import *
 
 class Plugin (ReModule):
     name = 'listitem'
-    pattern = re.compile(r'(?P<indent>(?:  )*)(?P<prefix>[\*\+\-] |\d. )(?P<text>.*)')
+    pattern = [re.compile(r'(?P<indent>(?:  )*)(?P<prefix>[\*\+\-] |\d. )(?P<text>.*)')]
 
     def handler(self, match: re.Match[str]) -> str:
         item_indent:str = match.group('indent')

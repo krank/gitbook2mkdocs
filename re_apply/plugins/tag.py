@@ -8,7 +8,7 @@ from .._remodule import *
 
 class Plugin (ReModule):
     name = 'tag'
-    pattern:re.Pattern[str] = re.compile(r'\\<(?P<tagname>.*?)>')
+    pattern = [re.compile(r'\\<(?P<tagname>.*?)>')]
         
     def handler(self, match:re.Match[str]) -> str:
         tag_name = str(match.group('tagname'))

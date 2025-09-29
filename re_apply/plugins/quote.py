@@ -9,7 +9,7 @@ from .._remodule import *
 
 class Plugin (ReModule):
     name = 'mark'
-    pattern = re.compile(r'> (?P<indent> *)(?P<content>.+)')
+    pattern = [re.compile(r'> (?P<indent> *)(?P<content>.+)')]
 
     def handler(self, match: re.Match[str]) -> str:
         quote_indent = str(match.group('indent'))

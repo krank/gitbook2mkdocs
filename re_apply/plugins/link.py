@@ -1,3 +1,4 @@
+from pathlib import Path
 from .._remodule import *
 
 # Make sure (local) links to folders go to README.md's, and fix anchors
@@ -11,7 +12,13 @@ from .._remodule import *
 
 class Plugin (ReModule):
     name = 'link'
-    pattern = re.compile(r'\[(?P<text>.*?)\]\((?P<url>(?P<path>(?<=\().*?)(?P<filename>[^/\n\(]*?)?(?P<anchor>#.+?(?=\)))?\))')
+    
+    pattern = [
+        # No brackets <>
+        re.compile(r'\[(?P<text>.*?)\]\((?P<url>(?<!<)(?P<path>[^<].*/)?(?P<filename>[^/\n\(]*?)?(?P<anchor>#.+?(?=\)))?)\)'),
+        # With brackets <>
+        re.compile(r'\[(?P<text>.*?)\]\(<(?P<url>(?P<path>.*/)?(?P<filename>.*?)?(?P<anchor>#.+?(?=\>))?)>\)')        
+    ]
 
     def handler(self, match: re.Match[str]) -> str:
         link_text = str(match.group('text'))
@@ -31,6 +38,16 @@ class Plugin (ReModule):
 
             # Remove periods from anchors
             link_anchor = link_anchor.replace('.', '')
+            
+            # TODO: Detect ".hidden"
+            # if (isinstance(self.local_dict['file'], Path)):
+            #     fullpath = Path(self.local_dict['file']).parent \
+            #         / link_url
+            #     if not fullpath.exists():
+            #         print("MISSING")
+            # test = Path(link_filename)
+            # print(test.stem)
+            # # if (test.stem.endswith('.hidden')):
 
         link_url = link_path + link_filename + link_anchor
 

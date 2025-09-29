@@ -12,8 +12,8 @@ from .._remodule import *
 
 class Plugin (ReModule):
     name = 'tab'
-    pattern: re.Pattern[str] = re.compile(
-        r'{% tab title=\"(?P<title>.*)\" %}(?P<content>[\s\S]*?){% endtab %}')
+    pattern = [re.compile(
+        r'{% tab title=\"(?P<title>.*)\" %}(?P<content>[\s\S]*?){% endtab %}')]
 
     def handler(self, match: re.Match[str]) -> str:
         tab_title = match.group("title")
