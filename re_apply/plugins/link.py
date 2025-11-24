@@ -15,7 +15,8 @@ class Plugin (ReModule):
     
     pattern = [
         # No brackets <>
-        re.compile(r'\[(?P<text>.*?)\]\((?P<url>(?<!<)(?P<path>[^<].*/)?(?P<filename>[^/\n\(]*?)?(?P<anchor>#.+?(?=\)))?)\)'),
+        # re.compile(r'\[(?P<text>.*?)\]\((?P<url>(?<!<)(?P<path>[^<].*/)?(?P<filename>[^/\n\(]*?)?(?P<anchor>#.+?(?=\)))?)\)'),
+        re.compile(r'\[(?P<text>.*?)\]\((?P<url>(?<!<)(?P<path>[^<][^)]*/)?(?P<filename>[^/\n\(]*?)?(?P<anchor>#.+?(?=\)))?)\)'),
         # With brackets <>
         re.compile(r'\[(?P<text>.*?)\]\(<(?P<url>(?P<path>.*/)?(?P<filename>.*?)?(?P<anchor>#.+?(?=\>))?)>\)')        
     ]
