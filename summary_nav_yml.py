@@ -37,7 +37,7 @@ def tag_print(text: str, indent: int) -> None:
         with tag_output_file.open("a", encoding="utf-8") as file:
             file.write(line + "\n")
 
-
+#FIXME: Parsing apparently breaks
 def parse(yml_dict: Yml_dict_type,
           lines: list[str],
           current_line: int,

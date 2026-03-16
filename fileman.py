@@ -97,6 +97,7 @@ def copy_assets(assets_dict: Asset_dict_type, full_asset_sourcedir: Path, full_a
 
 def write_assets_json(docs_source_dir: Path, assets_dict: Asset_dict_type):
     # Write assets_dict to assets.json in source dir
+    # TODO: Write this to target instead
     asset_file = Path(docs_source_dir, 'assets.json')
 
     with asset_file.open('w', encoding='utf-8') as file:
@@ -107,7 +108,7 @@ def write_assets_json(docs_source_dir: Path, assets_dict: Asset_dict_type):
 def copy_extra_files(docs_target_dir: Path, extra_source_dir: Path):
     if extra_source_dir.exists():
         ux.print('Copying extra files')
-        for source_file in extra_source_dir.glob('**/*.*'):
+        for source_file in extra_source_dir.glob('**/*'):
             target_file: Path = docs_target_dir / \
                 source_file.relative_to(extra_source_dir)
             ux.print(f' {source_file} >> {target_file}')

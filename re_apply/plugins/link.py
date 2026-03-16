@@ -15,6 +15,7 @@ class Plugin (ReModule):
     
     pattern = [
         # No brackets <>
+        # TODO: Don't include images; let images module handle them
         # re.compile(r'\[(?P<text>.*?)\]\((?P<url>(?<!<)(?P<path>[^<].*/)?(?P<filename>[^/\n\(]*?)?(?P<anchor>#.+?(?=\)))?)\)'),
         re.compile(r'\[(?P<text>.*?)\]\((?P<url>(?<!<)(?P<path>[^<][^)]*/)?(?P<filename>[^/\n\(]*?)?(?P<anchor>#.+?(?=\)))?)\)'),
         # With brackets <>
@@ -40,12 +41,12 @@ class Plugin (ReModule):
             # Remove periods from anchors
             link_anchor = link_anchor.replace('.', '')
             
-            # TODO: Detect ".hidden"
             # if (isinstance(self.local_dict['file'], Path)):
             #     fullpath = Path(self.local_dict['file']).parent \
-            #         / link_url
+            #         / link_path / link_filename
             #     if not fullpath.exists():
-            #         print("MISSING")
+            #         print(f"MISSING: {fullpath}")
+            # TODO: Detect hidden, ignore assets
             # test = Path(link_filename)
             # print(test.stem)
             # # if (test.stem.endswith('.hidden')):

@@ -6,6 +6,16 @@ It's quite opinionated and tailored to my specific use case.
 
 It's always work in progress.
 
+## Preparations
+
+Clone this repo to any location.
+
+Create a basic mkdocs project folder. Its "docs" subfolder will be the *target*
+
+Clone *source* (gitbook) repo. It is recommended to make it a subfolder named "src" in the mkdocs project folder.
+
+Run the gitbook2mkdocs script. If it's run in the mkdocs project folder (with src and docs subfolders), it should use those automatically and not require any additional commandline switches.
+
 ## Usage
 
 ```
