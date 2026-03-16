@@ -37,7 +37,6 @@ def tag_print(text: str, indent: int) -> None:
         with tag_output_file.open("a", encoding="utf-8") as file:
             file.write(line + "\n")
 
-#FIXME: Parsing apparently breaks
 def parse(yml_dict: Yml_dict_type,
           lines: list[str],
           current_line: int,
@@ -206,6 +205,13 @@ def parse(yml_dict: Yml_dict_type,
     # ------------------------------------------------------------------------------
     # Final cleanup after last line
 
+    # If we're in a chapter, close it properly pls
+    if current_indent > 0:
+        common_base_path = os.path.commonpath(paths)
+        new_key = Path(common_base_path, nav_filename).as_posix()
+        yml_dict[new_key] = yml_dict.pop(current_title)
+
+
     tag_print("/" + current_title, current_indent)
     return (yml_dict, current_line, current_indent-1)
 
@@ -230,11 +236,17 @@ def make_nav_yml(base_dir: Path) -> Yml_dict_type:
 
 def create_files(base_dir: Path, yml_dict: Yml_dict_type) -> None:
     for filename, content in yml_dict.items():
+        
         full_filename = base_dir / filename
 
-        yml_structure: dict[str, object] = {
-            'ignore': '*.hidden.md'
+        yml_structure: Yml_dict_type = {
+            'ignore': ['*.hidden.md']
         }
+
+
+
+        if full_filename.parent == base_dir:
+            yml_structure["ignore"].append("SUMMARY.md")
 
         if flag_include_star:
             content.append('*')

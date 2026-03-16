@@ -99,7 +99,7 @@ if args['generate_nav']:
 
 ux.header('Copy and rename assets...')
 
-fileman.write_assets_json(docs_source_dir, assets_dict)
+# fileman.write_assets_json(docs_source_dir, assets_dict)
 
 ux.print(f'\nFound {len(assets_dict)} assets')
 
